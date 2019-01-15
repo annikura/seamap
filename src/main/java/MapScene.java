@@ -4,6 +4,8 @@ import com.sothawo.mapjfx.*;
 import com.sothawo.mapjfx.event.MapViewEvent;
 import com.sothawo.mapjfx.event.MarkerEvent;
 import javafx.beans.property.BooleanProperty;
+import javafx.beans.value.ChangeListener;
+import javafx.beans.value.ObservableValue;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.canvas.Canvas;
@@ -35,10 +37,12 @@ public class MapScene {
 
     private VBox mapSettingsPaneBox = new VBox();
     private TitledPane mapSettings = new TitledPane("Map settings", mapSettingsPaneBox);
-    private CheckBox disableMarkersCheckBox = new CheckBox("Disable markers");
-    private Button showMarkers = new Button("Show all markers");
-    private CheckBox disablePathsCheckBox = new CheckBox("Disable paths");
-    private Button showPaths = new Button("Show all paths");
+    private ToggleGroup visibilityToggle = new ToggleGroup();
+    private RadioButton showAll = new RadioButton("Show everything");
+    private RadioButton showOnlyMarkers = new RadioButton("Show markers only");
+    private RadioButton showOnlyPaths = new RadioButton("Show paths only");
+    private RadioButton customMode = new RadioButton("Custom mode");
+
 
     private VBox contentSettingsPaneBox = new VBox();
     private TitledPane contentSettings = new TitledPane("Content settings", contentSettingsPaneBox);
@@ -53,7 +57,6 @@ public class MapScene {
     private VBox crossButtonBox = new VBox();
     private VBox helpBox = new VBox();
     private WebView webView = new WebView();
-
 
     private TreeView<String> visibilityControlsTree = new TreeView<>();
 
@@ -74,6 +77,29 @@ public class MapScene {
         leftPanel.getPanes().addAll(mapSettings, contentSettings);
         leftPanel.setExpandedPane(mapSettings);
 
+        showAll.setToggleGroup(visibilityToggle);
+        showOnlyMarkers.setToggleGroup(visibilityToggle);
+        showOnlyPaths.setToggleGroup(visibilityToggle);
+        customMode.setToggleGroup(visibilityToggle);
+
+        visibilityToggle.selectedToggleProperty().addListener((observableValue, oldToggle, newToggle) -> {
+            visibilityControlsTree.setDisable(!newToggle.equals(customMode));
+            if (newToggle.equals(customMode)) {
+                return;
+            }
+            shipMapElements.forEach(shipElements -> {
+                shipElements.setMarkersState(false);
+                shipElements.setPathState(false);
+            });
+            if (newToggle.equals(showAll) || newToggle.equals(showOnlyMarkers)) {
+                shipMapElements.forEach(shipElements -> shipElements.setMarkersState(true));
+            }
+            if (newToggle.equals(showAll) || newToggle.equals(showOnlyPaths)) {
+                shipMapElements.forEach(shipElements -> shipElements.setPathState(true));
+            }
+        });
+        showAll.setSelected(true);
+
         CheckBoxTreeItem<String> visibilityControlsRootItem = new CheckBoxTreeItem<>("Content visibility");
         visibilityControlsRootItem.setExpanded(true);
         visibilityControlsTree.setRoot(visibilityControlsRootItem);
@@ -81,19 +107,8 @@ public class MapScene {
         visibilityControlsTree.setCellFactory(CheckBoxTreeCell.forTreeView());
 
         mapSettingsPaneBox.setSpacing(5.0);
-        disableMarkersCheckBox.selectedProperty().addListener((observableValue, aBoolean, isSelected) -> {
-            if (isSelected) {
-                shipMapElements.forEach(elements -> elements.setMarkersState(false));
-            }
-        });
 
-        disablePathsCheckBox.selectedProperty().addListener((observableValue, aBoolean, isSelected) -> {
-            if (isSelected) {
-                shipMapElements.forEach(elements -> elements.setPathState(false));
-            }
-        });
-
-        mapSettingsPaneBox.getChildren().addAll(visibilityControlsTree, disableMarkersCheckBox, disablePathsCheckBox);
+        mapSettingsPaneBox.getChildren().addAll(showAll, showOnlyMarkers, showOnlyPaths, customMode, visibilityControlsTree);
 
         closeHelpButton.setGraphic(crossImageView);
         closeHelpButton.getStylesheets().add("cross_button.css");
@@ -144,22 +159,17 @@ public class MapScene {
         for (ShipData ship : mapData.ships) {
             final ShipMapElements shipElements = new ShipMapElements(ship.markers, ship.color);
 
-            final CheckBoxTreeItem<String> shipCheckBoxItem = new CheckBoxTreeItem<>(ship.ship_name + " (" + ship.color + ") visible");
+            final CheckBoxTreeItem<String> shipCheckBoxItem = new CheckBoxTreeItem<>(ship.ship_name + " (" + ship.color + ")");
             final CheckBoxTreeItem<String> dataPointsCheckBoxItem = new CheckBoxTreeItem<>("Data points visible");
             final CheckBoxTreeItem<String> shipRoutesCheckBoxItem = new CheckBoxTreeItem<>("Path visible");
-            shipCheckBoxItem.getChildren().addAll(dataPointsCheckBoxItem, shipRoutesCheckBoxItem);
+            shipCheckBoxItem.getChildren().add(dataPointsCheckBoxItem);
+            shipCheckBoxItem.getChildren().add(shipRoutesCheckBoxItem);
 
-            dataPointsCheckBoxItem.selectedProperty().addListener((observableValue, aBoolean, isSelected) -> {
-                if (isSelected) disableMarkersCheckBox.setSelected(false);
-            });
-            shipRoutesCheckBoxItem.selectedProperty().addListener((observableValue, aBoolean, isSelected) -> {
-                if (isSelected) disablePathsCheckBox.setSelected(false);
-            });
+            dataPointsCheckBoxItem.setSelected(!showOnlyPaths.isSelected());
+            shipRoutesCheckBoxItem.setSelected(!showOnlyMarkers.isSelected());
+            shipElements.setMarkersState(!showOnlyPaths.isSelected());
+            shipElements.setPathState(!showOnlyMarkers.isSelected());
 
-            dataPointsCheckBoxItem.setSelected(!disableMarkersCheckBox.isSelected());
-            shipRoutesCheckBoxItem.setSelected(!disablePathsCheckBox.isSelected());
-            shipElements.setMarkersState(!disableMarkersCheckBox.isSelected());
-            shipElements.setPathState(!disablePathsCheckBox.isSelected());
             shipElements.bindMarkersWith(dataPointsCheckBoxItem.selectedProperty());
             shipElements.bindPathWith(shipRoutesCheckBoxItem.selectedProperty());
 
