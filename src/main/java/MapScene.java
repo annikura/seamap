@@ -4,21 +4,28 @@ import com.sothawo.mapjfx.*;
 import com.sothawo.mapjfx.event.MapViewEvent;
 import com.sothawo.mapjfx.event.MarkerEvent;
 import javafx.beans.property.BooleanProperty;
-import javafx.beans.value.ChangeListener;
-import javafx.beans.value.ObservableValue;
+import javafx.event.EventHandler;
+import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
+import javafx.scene.Scene;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.CheckBoxTreeCell;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
+import javafx.scene.text.Font;
+import javafx.scene.text.FontWeight;
+import javafx.scene.text.Text;
 import javafx.scene.web.WebView;
+import javafx.stage.Stage;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.FileNotFoundException;
@@ -54,9 +61,9 @@ public class MapScene {
     private Image crossImage = new Image(getClass().getResourceAsStream("cross.png"));
     private ImageView crossImageView = new ImageView(crossImage);
     private Button closeHelpButton = new Button();
-    private VBox crossButtonBox = new VBox();
+    private HBox crossButtonBox = new HBox();
     private VBox helpBox = new VBox();
-    private WebView webView = new WebView();
+    private TextArea generalInfoContent = new TextArea();
 
     private TreeView<String> visibilityControlsTree = new TreeView<>();
 
@@ -64,7 +71,7 @@ public class MapScene {
     private HashMap<String, MarkerData> markerMapping = new HashMap<>();
 
 
-    public MapScene() {
+    public MapScene(final @NotNull Scene scene) {
         mapView.initializedProperty().addListener((observableValue, aBoolean, t1) -> {
             mapView.setCenter(new Coordinate(10.0, 10.0));
             mapView.setMapType(MapType.OSM);
@@ -114,11 +121,21 @@ public class MapScene {
         closeHelpButton.getStylesheets().add("cross_button.css");
         closeHelpButton.setOnMouseClicked(mouseEvent -> mainPane.setRight(null));
 
-        crossButtonBox.setAlignment(Pos.BASELINE_RIGHT);
-        crossButtonBox.fillWidthProperty();
+        crossButtonBox.setAlignment(Pos.CENTER_RIGHT);
         crossButtonBox.getChildren().add(closeHelpButton);
         helpBox.setMaxWidth(400);
-        helpBox.getChildren().addAll(closeHelpButton, webView);
+
+        Label generalInfoHeading = new Label("General info");
+        generalInfoHeading.setFont(Font.font("Verdana", FontWeight.BOLD, 25));
+        generalInfoHeading.setOpaqueInsets(new Insets(20));
+        generalInfoContent.setWrapText(true);
+        generalInfoContent.setEditable(false);
+        generalInfoContent.setStyle(
+                "-fx-background-color: transparent ;" +
+                "-fx-background-insets: 0px ;");
+        VBox innerHelpBox = new VBox(generalInfoHeading, generalInfoContent);
+        innerHelpBox.setStyle("-fx-padding: 15px;");
+        helpBox.getChildren().addAll(closeHelpButton, innerHelpBox);
 
         statusBar.setSpacing(10);
         statusBar.setAlignment(Pos.CENTER);
@@ -129,10 +146,21 @@ public class MapScene {
         mapCanvas.widthProperty().bind(mapView.widthProperty());
         mapCanvas.heightProperty().bind(mapView.heightProperty());
 
-        mapViewStack.getChildren().addAll(mapView, mapCanvas);
+        mapViewStack.getChildren().addAll(mapView);
         mainPane.setCenter(mapViewStack);
         mainPane.setBottom(statusBar);
         mainPane.setLeft(leftPanel);
+
+        scene.addEventHandler(KeyEvent.KEY_PRESSED, t -> {
+            if (t.getCode()== KeyCode.ESCAPE) {
+                if (mainPane.getRight() != null) {
+                    mainPane.setRight(null);
+                } else {
+                    Stage sb = (Stage) scene.getWindow();
+                    sb.close();
+                }
+            }
+        });
     }
 
     public Node getMapScene() {
@@ -152,14 +180,18 @@ public class MapScene {
         MapData mapData = gson.fromJson(reader, MapData.class);
         mapView.setCenter(new Coordinate(mapData.mapCenterLat, mapData.mapCenterLng));
         mapView.addEventHandler(MarkerEvent.MARKER_CLICKED, event -> {
-                webView.getEngine().loadContent(markerMapping.get(event.getMarker().getId()).toolTip);
+                MarkerData markerData = markerMapping.get(event.getMarker().getId());
+                generalInfoContent.setText(
+                        "Ship: " + "\n" +
+                        "Date: " + markerData.date + "\n" +
+                        "Original coordinates: " + markerData.originalCoordinates + "\n" +
+                        "Comment: " + markerData.comment + "\n");
                 mainPane.setRight(helpBox);
         });
 
         for (ShipData ship : mapData.ships) {
             final ShipMapElements shipElements = new ShipMapElements(ship.markers, ship.color);
-
-            final CheckBoxTreeItem<String> shipCheckBoxItem = new CheckBoxTreeItem<>(ship.ship_name + " (" + ship.color + ")");
+            final CheckBoxTreeItem<String> shipCheckBoxItem = new CheckBoxTreeItem<>(ship.shipName + " (" + ship.color + ")");
             final CheckBoxTreeItem<String> dataPointsCheckBoxItem = new CheckBoxTreeItem<>("Data points visible");
             final CheckBoxTreeItem<String> shipRoutesCheckBoxItem = new CheckBoxTreeItem<>("Path visible");
             shipCheckBoxItem.getChildren().add(dataPointsCheckBoxItem);
@@ -187,7 +219,7 @@ public class MapScene {
         private ShipMapElements(final @NotNull List<MarkerData> markerData, @NotNull String color) {
             ArrayList<Coordinate> coordinates = new ArrayList<>();
             markerData.forEach(marker -> {
-                Coordinate newCoordinate = new Coordinate(marker.lat, marker.lng);
+                Coordinate newCoordinate = new Coordinate(marker.coordinate.lat, marker.coordinate.lng);
                 Marker newMarker = Marker
                         .createProvided(Marker.Provided.valueOf(color.toUpperCase()))
                         .setPosition(newCoordinate);

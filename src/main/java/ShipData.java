@@ -2,6 +2,6 @@ import java.util.List;
 
 public class ShipData {
     String color;
-    String ship_name;
+    String shipName;
     List<MarkerData> markers;
 }

@@ -1,14 +1,15 @@
 import java.util.List;
 
 public class MarkerData {
-    Double wind_lat;
-    Double wind_lng;
+    Double windLat;
+    Double windLng;
+    Double visibility;
 
-    Double lat;
-    Double lng;
+    CoordinateData coordinate;
 
-    String title;
-    String toolTip;
+    String date;
+    String originalCoordinates;
+    String comment;
 
-    List<Double> square;
+    List<CoordinateData> square;
 }
