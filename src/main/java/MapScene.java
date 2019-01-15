@@ -4,7 +4,6 @@ import com.sothawo.mapjfx.*;
 import com.sothawo.mapjfx.event.MapViewEvent;
 import com.sothawo.mapjfx.event.MarkerEvent;
 import javafx.beans.property.BooleanProperty;
-import javafx.event.EventHandler;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
@@ -23,8 +22,6 @@ import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
-import javafx.scene.text.Text;
-import javafx.scene.web.WebView;
 import javafx.stage.Stage;
 import org.jetbrains.annotations.NotNull;
 
@@ -35,7 +32,11 @@ import java.util.HashMap;
 import java.util.List;
 
 public class MapScene {
-    private BorderPane mainPane = new BorderPane();
+    private TabPane mainPane = new TabPane();
+    private Tab mapTab = new Tab("Map");
+    private Tab tableTap = new Tab("Table");
+
+    private BorderPane mapPane = new BorderPane();
     private StackPane mapViewStack = new StackPane();
     private MapView mapView = new MapView();
     private Accordion leftPanel = new Accordion();
@@ -119,7 +120,7 @@ public class MapScene {
 
         closeHelpButton.setGraphic(crossImageView);
         closeHelpButton.getStylesheets().add("cross_button.css");
-        closeHelpButton.setOnMouseClicked(mouseEvent -> mainPane.setRight(null));
+        closeHelpButton.setOnMouseClicked(mouseEvent -> mapPane.setRight(null));
 
         crossButtonBox.setAlignment(Pos.CENTER_RIGHT);
         crossButtonBox.getChildren().add(closeHelpButton);
@@ -147,14 +148,17 @@ public class MapScene {
         mapCanvas.heightProperty().bind(mapView.heightProperty());
 
         mapViewStack.getChildren().addAll(mapView);
-        mainPane.setCenter(mapViewStack);
-        mainPane.setBottom(statusBar);
-        mainPane.setLeft(leftPanel);
+        mapPane.setCenter(mapViewStack);
+        mapPane.setBottom(statusBar);
+        mapPane.setLeft(leftPanel);
+
+        mainPane.getTabs().addAll(mapTab, tableTap);
+        mapTab.setContent(mapPane);
 
         scene.addEventHandler(KeyEvent.KEY_PRESSED, t -> {
             if (t.getCode()== KeyCode.ESCAPE) {
-                if (mainPane.getRight() != null) {
-                    mainPane.setRight(null);
+                if (mapPane.getRight() != null) {
+                    mapPane.setRight(null);
                 } else {
                     Stage sb = (Stage) scene.getWindow();
                     sb.close();
@@ -186,7 +190,7 @@ public class MapScene {
                         "Date: " + markerData.date + "\n" +
                         "Original coordinates: " + markerData.originalCoordinates + "\n" +
                         "Comment: " + markerData.comment + "\n");
-                mainPane.setRight(helpBox);
+                mapPane.setRight(helpBox);
         });
 
         for (ShipData ship : mapData.ships) {
