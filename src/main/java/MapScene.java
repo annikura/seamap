@@ -3,6 +3,7 @@ import com.google.gson.stream.JsonReader;
 import com.sothawo.mapjfx.*;
 import com.sothawo.mapjfx.event.MapViewEvent;
 import com.sothawo.mapjfx.event.MarkerEvent;
+import com.sothawo.mapjfx.offline.OfflineCache;
 import javafx.beans.property.BooleanProperty;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -27,9 +28,14 @@ import org.jetbrains.annotations.NotNull;
 
 import java.io.FileNotFoundException;
 import java.io.FileReader;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class MapScene {
     private TabPane mainPane = new TabPane();
@@ -50,6 +56,7 @@ public class MapScene {
     private RadioButton showOnlyMarkers = new RadioButton("Show markers only");
     private RadioButton showOnlyPaths = new RadioButton("Show paths only");
     private RadioButton customMode = new RadioButton("Custom mode");
+    private CheckBox showSquaresCheckBox = new CheckBox("Show relevant marinequadrates");
 
 
     private VBox contentSettingsPaneBox = new VBox();
@@ -73,6 +80,17 @@ public class MapScene {
 
 
     public MapScene(final @NotNull Scene scene) {
+        final OfflineCache offlineCache = mapView.getOfflineCache();
+        final String cacheDir = Path.of(System.getProperty("java.io.tmpdir"), "seamap-cache").toString();
+
+        try {
+            Files.createDirectories(Paths.get(cacheDir));
+            offlineCache.setCacheDirectory(cacheDir);
+            offlineCache.setActive(true);
+        } catch (IOException e) {
+            System.out.println(e.getMessage());
+        }
+
         mapView.initializedProperty().addListener((observableValue, aBoolean, t1) -> {
             mapView.setCenter(new Coordinate(10.0, 10.0));
             mapView.setMapType(MapType.OSM);
@@ -116,7 +134,10 @@ public class MapScene {
 
         mapSettingsPaneBox.setSpacing(5.0);
 
-        mapSettingsPaneBox.getChildren().addAll(showAll, showOnlyMarkers, showOnlyPaths, customMode, visibilityControlsTree);
+        mapSettingsPaneBox.getChildren().addAll(
+                showAll, showOnlyMarkers, showOnlyPaths, customMode,
+                visibilityControlsTree,
+                showSquaresCheckBox);
 
         closeHelpButton.setGraphic(crossImageView);
         closeHelpButton.getStylesheets().add("cross_button.css");
@@ -186,10 +207,12 @@ public class MapScene {
         mapView.addEventHandler(MarkerEvent.MARKER_CLICKED, event -> {
                 MarkerData markerData = markerMapping.get(event.getMarker().getId());
                 generalInfoContent.setText(
-                        "Ship: " + "\n" +
+                        "Ship: " + markerData.ship + "\n" +
                         "Date: " + markerData.date + "\n" +
-                        "Original coordinates: " + markerData.originalCoordinates + "\n" +
-                        "Comment: " + markerData.comment + "\n");
+                        "Coordinates: \n\tlat: " + markerData.coordinate.lat + "\n\tlng: " + markerData.coordinate.lng + "\n" +
+                        "Original coordinates: " + markerData.originalCoordinates + "\n");
+                if (markerData.comment != null && !markerData.comment.isEmpty())
+                generalInfoContent.setText(generalInfoContent.getText() + "Comment: " + markerData.comment + "\n");
                 mapPane.setRight(helpBox);
         });
 
@@ -208,6 +231,7 @@ public class MapScene {
 
             shipElements.bindMarkersWith(dataPointsCheckBoxItem.selectedProperty());
             shipElements.bindPathWith(shipRoutesCheckBoxItem.selectedProperty());
+            shipElements.bindSquaresWith(shipCheckBoxItem.selectedProperty(), showSquaresCheckBox.selectedProperty());
 
             visibilityControlsTree.getRoot().getChildren().add(shipCheckBoxItem);
             shipElements.showShipElements(mapView);
@@ -218,7 +242,7 @@ public class MapScene {
     private class ShipMapElements {
         private final ArrayList<Marker> markers = new ArrayList<>();
         private final CoordinateLine path;
-
+        private final HashMap<String, CoordinateLine> marinequadrates = new HashMap<>();
 
         private ShipMapElements(final @NotNull List<MarkerData> markerData, @NotNull String color) {
             ArrayList<Coordinate> coordinates = new ArrayList<>();
@@ -228,6 +252,13 @@ public class MapScene {
                         .createProvided(Marker.Provided.valueOf(color.toUpperCase()))
                         .setPosition(newCoordinate);
                 coordinates.add(newCoordinate);
+
+                if (marker.square != null) {
+                    CoordinateLine newSquare = new CoordinateLine(marker.square.stream()
+                            .map(coordinateData -> new Coordinate(coordinateData.lat, coordinateData.lng))
+                            .collect(Collectors.toList()));
+                    marinequadrates.put(newMarker.getId(), newSquare);
+                }
                 markers.add(newMarker);
                 markerMapping.put(newMarker.getId(), marker);
             });
@@ -237,6 +268,7 @@ public class MapScene {
         private void showShipElements(final @NotNull MapView mapView) {
             markers.forEach(mapView::addMarker);
             mapView.addCoordinateLine(path);
+            marinequadrates.values().forEach(mapView::addCoordinateLine);
         }
 
         private void deleteShipElements(final @NotNull MapView mapView) {
@@ -258,6 +290,18 @@ public class MapScene {
 
         private void bindPathWith(final @NotNull BooleanProperty bindingProperty) {
             bindingProperty.bindBidirectional(path.visibleProperty());
+        }
+
+        private void bindSquaresWith(final @NotNull BooleanProperty shipVisibility,
+                                     final @NotNull BooleanProperty squaresVisibility) {
+            shipVisibility.addListener((observableValue, wasSelected, isSelected) ->
+                    marinequadrates
+                            .values()
+                            .forEach(line -> line.setVisible(shipVisibility.get() && squaresVisibility.get())));
+            squaresVisibility.addListener((observableValue, wasSelected, isSelected) ->
+                    marinequadrates
+                            .values()
+                            .forEach(line -> line.setVisible(shipVisibility.get() && squaresVisibility.get())));
         }
     }
 }

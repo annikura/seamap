@@ -7,6 +7,7 @@ public class MarkerData {
 
     CoordinateData coordinate;
 
+    String ship;
     String date;
     String originalCoordinates;
     String comment;
