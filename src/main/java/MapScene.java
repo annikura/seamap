@@ -9,11 +9,13 @@ import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.Scene;
+import javafx.scene.SnapshotParameters;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.CheckBoxTreeCell;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
+import javafx.scene.image.WritableImage;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.BorderPane;
@@ -26,6 +28,7 @@ import javafx.scene.text.FontWeight;
 import javafx.stage.Stage;
 import org.jetbrains.annotations.NotNull;
 
+import javax.swing.event.DocumentEvent;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
@@ -57,6 +60,7 @@ public class MapScene {
     private RadioButton showOnlyPaths = new RadioButton("Show paths only");
     private RadioButton customMode = new RadioButton("Custom mode");
     private CheckBox showSquaresCheckBox = new CheckBox("Show relevant marinequadrates");
+    private Button imageModeButton = new Button("Open image mode");
 
 
     private VBox contentSettingsPaneBox = new VBox();
@@ -131,13 +135,33 @@ public class MapScene {
         visibilityControlsTree.setRoot(visibilityControlsRootItem);
         visibilityControlsTree.setShowRoot(true);
         visibilityControlsTree.setCellFactory(CheckBoxTreeCell.forTreeView());
+        imageModeButton.setOnMouseClicked(mouseEvent -> {
+            WritableImage mapSnapshot = mapView.snapshot(new SnapshotParameters(), null);
+
+            Stage newWindow = new Stage();
+            newWindow.setTitle("Image mode");
+
+            StackPane newStack = new StackPane();
+            newStack.getChildren().add(new ImageModeScene(mapSnapshot, newWindow).getMainPane());
+            Scene secondScene = new Scene(newStack, scene.getWidth(), scene.getHeight());
+
+            newWindow.setScene(secondScene);
+
+            // Set position of second window, related to primary window.
+
+            newWindow.setX(scene.getWindow().getX() + 100);
+            newWindow.setY(scene.getWindow().getY() + 100);
+            newWindow.setResizable(false);
+
+            newWindow.show();
+        });
 
         mapSettingsPaneBox.setSpacing(5.0);
-
         mapSettingsPaneBox.getChildren().addAll(
                 showAll, showOnlyMarkers, showOnlyPaths, customMode,
                 visibilityControlsTree,
-                showSquaresCheckBox);
+                showSquaresCheckBox,
+                imageModeButton);
 
         closeHelpButton.setGraphic(crossImageView);
         closeHelpButton.getStylesheets().add("cross_button.css");
@@ -188,7 +212,7 @@ public class MapScene {
         });
     }
 
-    public Node getMapScene() {
+    public Node getMainPane() {
         return mainPane;
     }
 
@@ -231,7 +255,7 @@ public class MapScene {
 
             shipElements.bindMarkersWith(dataPointsCheckBoxItem.selectedProperty());
             shipElements.bindPathWith(shipRoutesCheckBoxItem.selectedProperty());
-            shipElements.bindSquaresWith(shipCheckBoxItem.selectedProperty(), showSquaresCheckBox.selectedProperty());
+            shipElements.bindSquaresWith(dataPointsCheckBoxItem.selectedProperty(), shipRoutesCheckBoxItem.selectedProperty());
 
             visibilityControlsTree.getRoot().getChildren().add(shipCheckBoxItem);
             shipElements.showShipElements(mapView);
@@ -292,16 +316,23 @@ public class MapScene {
             bindingProperty.bindBidirectional(path.visibleProperty());
         }
 
-        private void bindSquaresWith(final @NotNull BooleanProperty shipVisibility,
-                                     final @NotNull BooleanProperty squaresVisibility) {
-            shipVisibility.addListener((observableValue, wasSelected, isSelected) ->
+        private void bindSquaresWith(final @NotNull BooleanProperty markersVisibility,
+                                     final @NotNull BooleanProperty pathVisibility) {
+            markersVisibility.addListener((observableValue, wasSelected, isSelected) ->
                     marinequadrates
                             .values()
-                            .forEach(line -> line.setVisible(shipVisibility.get() && squaresVisibility.get())));
-            squaresVisibility.addListener((observableValue, wasSelected, isSelected) ->
+                            .forEach(line -> line.setVisible(
+                                    (markersVisibility.get() || pathVisibility.get()) && showSquaresCheckBox.isSelected())));
+            pathVisibility.addListener((observableValue, wasSelected, isSelected) ->
                     marinequadrates
                             .values()
-                            .forEach(line -> line.setVisible(shipVisibility.get() && squaresVisibility.get())));
+                            .forEach(line -> line.setVisible(
+                                    (markersVisibility.get() || pathVisibility.get()) && showSquaresCheckBox.isSelected())));
+            showSquaresCheckBox.selectedProperty().addListener((observableValue, oldValue, newValue) ->
+                    marinequadrates
+                            .values()
+                            .forEach(line -> line.setVisible(
+                                    (markersVisibility.get() || pathVisibility.get()) && showSquaresCheckBox.isSelected())));
         }
     }
 }

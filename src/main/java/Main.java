@@ -12,7 +12,7 @@ public class Main extends Application {
         StackPane root = new StackPane();
 
         Scene scene = new Scene(root, 1500, 1000);
-        root.getChildren().add(new MapScene(scene).getMapScene());
+        root.getChildren().add(new MapScene(scene).getMainPane());
 
         stage.setScene(scene);
         stage.show();
