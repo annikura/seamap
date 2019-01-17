@@ -1,10 +1,12 @@
 import javafx.event.EventHandler;
+import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.*;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.*;
+import javafx.scene.shape.Rectangle;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import org.jetbrains.annotations.NotNull;
@@ -21,13 +23,25 @@ public class ImageModeScene {
     private TitledPane imageControls = new TitledPane("Image controls", imageConrolsPane);
     private Button uploadNewImageButton = new Button("Upload new image");
 
+
+    private ScrollPane scrollPane = new ScrollPane();
     private ArrayList<ImageView> images = new ArrayList<>();
 
     private AnchorPane anchorPane = new AnchorPane();
 
     public ImageModeScene(final @NotNull Image backgroundImage, final @NotNull Stage stage) {
         mapImage = new ImageView(backgroundImage);
-        centralStack.getChildren().addAll(mapImage, anchorPane);
+        anchorPane.getChildren().add(mapImage);
+        mapImage.setY(25);
+
+        scrollPane.setContent(anchorPane);
+
+        scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+        scrollPane.setVbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+        //Rectangle clip = new Rectangle(700, 700);
+        //clip.setLayoutX(0);
+        //clip.setLayoutY(0);
+        //anchorPane.setClip(clip);
 
         leftPane.setMinWidth(400);
         leftPane.setMaxWidth(400);
@@ -41,7 +55,6 @@ public class ImageModeScene {
             File picture = imageChooser.showOpenDialog(stage);
 
             ImageView newImage = new DraggableImageView(new Image(picture.toURI().toString()));
-
 
             Label imageLabel = new Label(picture.getName());
 
@@ -59,17 +72,46 @@ public class ImageModeScene {
             Label turnLabel = new Label("Rotation: ");
             Slider turnSlider = new Slider(0, 360, 0);
             Label turnValue = new Label("     0");
-            turnSlider.valueProperty().addListener((observableValue, oldVal, newVal) -> {
+                turnSlider.valueProperty().addListener((observableValue, oldVal, newVal) -> {
                 newImage.setRotate(newVal.doubleValue());
                 turnValue.setText(String.format("     %.2f", newVal.doubleValue()));
             });
             turnSlider.setBlockIncrement(0.5);
             HBox turnBox = new HBox(turnLabel, turnSlider, turnValue);
 
-            VBox imageControlsBox = new VBox(imageLabel, opacityBox, turnBox);
+            Label sizeLabel = new Label("Size: ");
+            Label wLabel = new Label("W");
+            Label hLabel = new Label("H");
+            TextField wField = new TextField(String.valueOf(newImage.getBoundsInParent().getWidth()));
+            TextField hField = new TextField(String.valueOf(newImage.getBoundsInParent().getHeight()));
+            wField.setOnAction(actionEvent -> {
+                newImage.setFitWidth(Double.valueOf(wField.getText()));
+            });
+            hField.setOnAction(actionEvent -> {
+                newImage.setFitHeight(Double.valueOf(hField.getText()));
+            });
+            wField.setMaxWidth(70);
+            hField.setMaxWidth(70);
+            newImage.fitWidthProperty().addListener((observableValue, oldVal, newVal) ->
+                    wField.setText(String.valueOf(newVal.doubleValue())));
+            newImage.fitHeightProperty().addListener((observableValue, oldVal, newVal) ->
+                    hField.setText(String.valueOf(newVal.doubleValue())));
+            HBox sizeBox = new HBox(sizeLabel, wLabel, wField, hLabel, hField);
+            sizeBox.setSpacing(5);
+
+            Button setToDefault = new Button("To (0, 0)");
+            setToDefault.setOnMouseClicked(mouseEvent1 -> {
+                newImage.setX(0);
+                newImage.setY(0);
+            });
+            CheckBox preserveRatioCheckBox = new CheckBox("Preserve ratio");
+            preserveRatioCheckBox.selectedProperty().bindBidirectional(newImage.preserveRatioProperty());
+            VBox imageSliders = new VBox(imageLabel, opacityBox, turnBox, sizeBox, preserveRatioCheckBox);
+            HBox imageControlsBox = new HBox(imageSliders, setToDefault);
+            imageControlsBox.setSpacing(10);
             imageControlsBox.setStyle("-fx-padding: 15px;");
 
-
+            imageControlsBox.setAlignment(Pos.CENTER);
             imageConrolsPane.getChildren().add(imageControlsBox);
             images.add(newImage);
 
@@ -81,7 +123,7 @@ public class ImageModeScene {
         imageControls.setContent(imageConrolsPane);
         leftPane.getPanes().addAll(imageControls);
 
-        mainPane.setCenter(centralStack);
+        mainPane.setCenter(scrollPane);
         mainPane.setLeft(leftPane);
     }
 
