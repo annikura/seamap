@@ -11,9 +11,11 @@ public class Main extends Application {
     public void start(Stage stage) throws Exception {
         StackPane root = new StackPane();
 
-        Scene scene = new Scene(root, 1500, 1000);
-        root.getChildren().add(new MapScene(scene).getMainPane());
+        Scene scene = new Scene(root);
+        root.getChildren().add(new MapScene(scene, stage).getMainPane());
 
+        stage.setFullScreen(true);
+        stage.setResizable(false);
         stage.setScene(scene);
         stage.show();
     }

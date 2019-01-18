@@ -10,7 +10,6 @@ import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.SnapshotParameters;
-import javafx.scene.canvas.Canvas;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.CheckBoxTreeCell;
 import javafx.scene.image.Image;
@@ -28,7 +27,6 @@ import javafx.scene.text.FontWeight;
 import javafx.stage.Stage;
 import org.jetbrains.annotations.NotNull;
 
-import javax.swing.event.DocumentEvent;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
@@ -49,7 +47,6 @@ public class MapScene {
     private StackPane mapViewStack = new StackPane();
     private MapView mapView = new MapView();
     private Accordion leftPanel = new Accordion();
-    private Canvas mapCanvas = new Canvas();
 
 
     private VBox mapSettingsPaneBox = new VBox();
@@ -65,6 +62,13 @@ public class MapScene {
 
     private VBox contentSettingsPaneBox = new VBox();
     private TitledPane contentSettings = new TitledPane("Content settings", contentSettingsPaneBox);
+    private RadioButton osmMapRadioButton = new RadioButton("OpenStreetMap");
+    private RadioButton bingRoadMapRadioButton = new RadioButton("Bing road");
+    private RadioButton bingArealMapRadioButton = new RadioButton("Bing areal");
+    private ToggleGroup mapTypeGroup = new ToggleGroup();
+    private Label bingApiLabel = new Label("Bing Api: ");
+    private TextField bingApiField = new TextField();
+    private HBox bingApiBox = new HBox(bingApiLabel, bingApiField);
 
     private HBox statusBar = new HBox();
     private Label currentCoordinatesLabel = new Label("Current coordinates (lat, lng):");
@@ -82,8 +86,11 @@ public class MapScene {
     private ArrayList<ShipMapElements> shipMapElements = new ArrayList<>();
     private HashMap<String, MarkerData> markerMapping = new HashMap<>();
 
+    private ImageModeScene imageModeScene;
 
-    public MapScene(final @NotNull Scene scene) {
+    public MapScene(final @NotNull Scene scene, final @NotNull Stage stage) {
+        imageModeScene = new ImageModeScene(stage, scene);
+
         final OfflineCache offlineCache = mapView.getOfflineCache();
         final String cacheDir = Path.of(System.getProperty("java.io.tmpdir"), "seamap-cache").toString();
 
@@ -138,22 +145,15 @@ public class MapScene {
         imageModeButton.setOnMouseClicked(mouseEvent -> {
             WritableImage mapSnapshot = mapView.snapshot(new SnapshotParameters(), null);
 
-            Stage newWindow = new Stage();
-            newWindow.setTitle("Image mode");
+            Stage newWindow = stage;
 
             StackPane newStack = new StackPane();
-            newStack.getChildren().add(new ImageModeScene(mapSnapshot, newWindow).getMainPane());
-            Scene secondScene = new Scene(newStack, scene.getWidth(), scene.getHeight());
+            imageModeScene.setBackgroundImage(mapSnapshot);
+            newStack.getChildren().add(imageModeScene.getMainPane());
+            Scene secondScene = new Scene(newStack);
 
             newWindow.setScene(secondScene);
-
-            // Set position of second window, related to primary window.
-
-            newWindow.setX(scene.getWindow().getX() + 100);
-            newWindow.setY(scene.getWindow().getY() + 100);
-            newWindow.setResizable(false);
-
-            newWindow.show();
+            newWindow.setFullScreen(true);
         });
 
         mapSettingsPaneBox.setSpacing(5.0);
@@ -162,6 +162,35 @@ public class MapScene {
                 visibilityControlsTree,
                 showSquaresCheckBox,
                 imageModeButton);
+
+        // Initialize MapSettings
+
+        mapTypeGroup.getToggles().addAll(osmMapRadioButton, bingRoadMapRadioButton, bingArealMapRadioButton);
+        contentSettingsPaneBox.getChildren().addAll(osmMapRadioButton, bingArealMapRadioButton, bingRoadMapRadioButton, bingApiBox);
+        contentSettingsPaneBox.setSpacing(10);
+        contentSettingsPaneBox.setStyle("-fx-padding: 15px;");
+        osmMapRadioButton.setSelected(true);
+        bingRoadMapRadioButton.setDisable(true);
+        bingArealMapRadioButton.setDisable(true);
+        bingApiField.textProperty().addListener(actionEvent -> {
+            bingArealMapRadioButton.setDisable(bingApiField.getText().isEmpty());
+            bingRoadMapRadioButton.setDisable(bingApiField.getText().isEmpty());
+        });
+        mapTypeGroup.selectedToggleProperty().addListener((observableValue, oldToggle, newToogle) -> {
+            if (newToogle.equals(osmMapRadioButton)) {
+                mapView.setMapType(MapType.OSM);
+            }
+            if (newToogle.equals(bingArealMapRadioButton)) {
+                mapView.setBingMapsApiKey(bingApiField.getText());
+                mapView.setMapType(MapType.BINGMAPS_AERIAL);
+            }
+            if (newToogle.equals(bingRoadMapRadioButton)) {
+                mapView.setBingMapsApiKey(bingApiField.getText());
+                mapView.setMapType(MapType.BINGMAPS_ROAD);
+            }
+        });
+
+        contentSettings.setContent(contentSettingsPaneBox);
 
         closeHelpButton.setGraphic(crossImageView);
         closeHelpButton.getStylesheets().add("cross_button.css");
@@ -189,9 +218,6 @@ public class MapScene {
                 String.format("%.10f, %.10f", event.getCoordinate().getLatitude(), event.getCoordinate().getLongitude())));
         statusBar.getChildren().addAll(currentCoordinatesLabel, currentCoordinatesValueLabel);
 
-        mapCanvas.widthProperty().bind(mapView.widthProperty());
-        mapCanvas.heightProperty().bind(mapView.heightProperty());
-
         mapViewStack.getChildren().addAll(mapView);
         mapPane.setCenter(mapViewStack);
         mapPane.setBottom(statusBar);
@@ -204,12 +230,10 @@ public class MapScene {
             if (t.getCode()== KeyCode.ESCAPE) {
                 if (mapPane.getRight() != null) {
                     mapPane.setRight(null);
-                } else {
-                    Stage sb = (Stage) scene.getWindow();
-                    sb.close();
                 }
             }
         });
+
     }
 
     public Node getMainPane() {
@@ -272,8 +296,7 @@ public class MapScene {
             ArrayList<Coordinate> coordinates = new ArrayList<>();
             markerData.forEach(marker -> {
                 Coordinate newCoordinate = new Coordinate(marker.coordinate.lat, marker.coordinate.lng);
-                Marker newMarker = Marker
-                        .createProvided(Marker.Provided.valueOf(color.toUpperCase()))
+                Marker newMarker = new Marker(getClass().getResource(color + ".png"), -12, -12)
                         .setPosition(newCoordinate);
                 coordinates.add(newCoordinate);
 

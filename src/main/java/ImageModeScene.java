@@ -1,12 +1,12 @@
 import javafx.event.EventHandler;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
+import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.*;
-import javafx.scene.shape.Rectangle;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import org.jetbrains.annotations.NotNull;
@@ -23,14 +23,15 @@ public class ImageModeScene {
     private TitledPane imageControls = new TitledPane("Image controls", imageConrolsPane);
     private Button uploadNewImageButton = new Button("Upload new image");
 
+    private Button backButton = new Button("Back");
 
     private ScrollPane scrollPane = new ScrollPane();
     private ArrayList<ImageView> images = new ArrayList<>();
 
     private AnchorPane anchorPane = new AnchorPane();
 
-    public ImageModeScene(final @NotNull Image backgroundImage, final @NotNull Stage stage) {
-        mapImage = new ImageView(backgroundImage);
+    public ImageModeScene(final @NotNull Stage stage, final @NotNull Scene backScene) {
+        mapImage = new ImageView();
         anchorPane.getChildren().add(mapImage);
         mapImage.setY(25);
 
@@ -38,14 +39,14 @@ public class ImageModeScene {
 
         scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
         scrollPane.setVbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
-        //Rectangle clip = new Rectangle(700, 700);
-        //clip.setLayoutX(0);
-        //clip.setLayoutY(0);
-        //anchorPane.setClip(clip);
 
         leftPane.setMinWidth(400);
         leftPane.setMaxWidth(400);
         leftPane.setExpandedPane(imageControls);
+        backButton.setOnMouseClicked(mouseEvent -> {
+            stage.setScene(backScene);
+            stage.setFullScreen(true);
+        });
         uploadNewImageButton.setOnMouseClicked(mouseEvent -> {
             FileChooser imageChooser = new FileChooser();
             imageChooser.getExtensionFilters().addAll(
@@ -118,7 +119,8 @@ public class ImageModeScene {
             anchorPane.getChildren().add(newImage);
         });
 
-        imageConrolsPane.getChildren().addAll(uploadNewImageButton);
+        imageConrolsPane.setSpacing(10);
+        imageConrolsPane.getChildren().addAll(backButton, uploadNewImageButton);
 
         imageControls.setContent(imageConrolsPane);
         leftPane.getPanes().addAll(imageControls);
@@ -129,6 +131,10 @@ public class ImageModeScene {
 
     public Node getMainPane() {
         return mainPane;
+    }
+
+    public void setBackgroundImage(@NotNull Image backgroundImage) {
+        mapImage.setImage(backgroundImage);
     }
 
     private class DraggableImageView extends ImageView {
