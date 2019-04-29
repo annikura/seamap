@@ -62,7 +62,11 @@
             <artifactId>annotations</artifactId>
             <version>9.0.4</version>
         </dependency>
-
+        <dependency>
+            <groupId>org.openjfx</groupId>
+            <artifactId>javafx-swing</artifactId>
+            <version>11-ea+24</version>
+        </dependency>
     </dependencies>
 
 </project>

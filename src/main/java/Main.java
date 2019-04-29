@@ -14,8 +14,6 @@ public class Main extends Application {
         Scene scene = new Scene(root);
         root.getChildren().add(new MapScene(scene, stage).getMainPane());
 
-        stage.setFullScreen(true);
-        stage.setResizable(false);
         stage.setScene(scene);
         stage.show();
     }

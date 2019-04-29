@@ -1,27 +1,37 @@
+import javafx.embed.swing.SwingFXUtils;
+import javafx.event.Event;
 import javafx.event.EventHandler;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
-import javafx.scene.Scene;
+import javafx.scene.SnapshotParameters;
 import javafx.scene.control.*;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
+import javafx.scene.image.WritableImage;
 import javafx.scene.input.MouseEvent;
-import javafx.scene.layout.*;
+import javafx.scene.layout.AnchorPane;
+import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import org.jetbrains.annotations.NotNull;
 
+import javax.imageio.ImageIO;
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.function.Function;
 
 public class ImageModeScene {
-    private StackPane centralStack = new StackPane();
     private ImageView mapImage;
     private BorderPane mainPane = new BorderPane();
     private Accordion leftPane = new Accordion();
+    private HBox buttonsPane = new HBox();
     private VBox imageConrolsPane = new VBox();
     private TitledPane imageControls = new TitledPane("Image controls", imageConrolsPane);
     private Button uploadNewImageButton = new Button("Upload new image");
+    private Button saveButton = new Button("Save");
 
     private Button backButton = new Button("Back");
 
@@ -30,12 +40,14 @@ public class ImageModeScene {
 
     private AnchorPane anchorPane = new AnchorPane();
 
-    public ImageModeScene(final @NotNull Stage stage, final @NotNull Scene backScene) {
+    public ImageModeScene(final @NotNull Function<Void, Void> onClose) {
         mapImage = new ImageView();
         anchorPane.getChildren().add(mapImage);
+
         mapImage.setY(25);
 
         scrollPane.setContent(anchorPane);
+        mapImage.setOnScroll(Event::consume);
 
         scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
         scrollPane.setVbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
@@ -44,8 +56,24 @@ public class ImageModeScene {
         leftPane.setMaxWidth(400);
         leftPane.setExpandedPane(imageControls);
         backButton.setOnMouseClicked(mouseEvent -> {
-            stage.setScene(backScene);
-            stage.setFullScreen(true);
+            onClose.apply(null);
+            ((Stage) mainPane.getScene().getWindow()).close();
+        });
+        saveButton.setOnMouseClicked(mouseEvent -> {
+            FileChooser fileChooser = new FileChooser();
+            fileChooser.setTitle("Save map");
+            Stage saverStage = new Stage();
+            File file = fileChooser.showSaveDialog(saverStage);
+            if (file != null) {
+                WritableImage wim = scrollPane.snapshot(new SnapshotParameters(), null);
+                try {
+                    ImageIO.write(SwingFXUtils.fromFXImage(wim,
+                            null), "png", file);
+                } catch (IOException ex) {
+                    System.out.println("Failed to save image");
+
+                }
+            }
         });
         uploadNewImageButton.setOnMouseClicked(mouseEvent -> {
             FileChooser imageChooser = new FileChooser();
@@ -53,7 +81,7 @@ public class ImageModeScene {
                     new FileChooser.ExtensionFilter("All Images", "*.*"),
                     new FileChooser.ExtensionFilter("JPG", "*.jpg"),
                     new FileChooser.ExtensionFilter("PNG", "*.png"));
-            File picture = imageChooser.showOpenDialog(stage);
+            File picture = imageChooser.showOpenDialog(mainPane.getScene().getWindow());
 
             ImageView newImage = new DraggableImageView(new Image(picture.toURI().toString()));
 
@@ -72,10 +100,12 @@ public class ImageModeScene {
 
             Label turnLabel = new Label("Rotation: ");
             Slider turnSlider = new Slider(0, 360, 0);
-            Label turnValue = new Label("     0");
-                turnSlider.valueProperty().addListener((observableValue, oldVal, newVal) -> {
+            Label turnValue = new Label("     000.00");
+            turnSlider.valueProperty().addListener((observableValue, oldVal, newVal) -> {
                 newImage.setRotate(newVal.doubleValue());
-                turnValue.setText(String.format("     %.2f", newVal.doubleValue()));
+                String label = String.format("%.2f", newVal.doubleValue());
+                while (label.length() < 6) label = "0" + label;
+                turnValue.setText("     " + label);
             });
             turnSlider.setBlockIncrement(0.5);
             HBox turnBox = new HBox(turnLabel, turnSlider, turnValue);
@@ -85,18 +115,23 @@ public class ImageModeScene {
             Label hLabel = new Label("H");
             TextField wField = new TextField(String.valueOf(newImage.getBoundsInParent().getWidth()));
             TextField hField = new TextField(String.valueOf(newImage.getBoundsInParent().getHeight()));
-            wField.setOnAction(actionEvent -> {
-                newImage.setFitWidth(Double.valueOf(wField.getText()));
-            });
-            hField.setOnAction(actionEvent -> {
-                newImage.setFitHeight(Double.valueOf(hField.getText()));
-            });
+            wField.setOnAction(actionEvent -> newImage.setFitWidth(Double.valueOf(wField.getText())));
+            hField.setOnAction(actionEvent -> newImage.setFitHeight(Double.valueOf(hField.getText())));
             wField.setMaxWidth(70);
             hField.setMaxWidth(70);
             newImage.fitWidthProperty().addListener((observableValue, oldVal, newVal) ->
                     wField.setText(String.valueOf(newVal.doubleValue())));
             newImage.fitHeightProperty().addListener((observableValue, oldVal, newVal) ->
                     hField.setText(String.valueOf(newVal.doubleValue())));
+            newImage.setOnScroll(scrollEvent -> {
+                double sizeCoefficient = 0.0005;
+                double sizeChange = Double.max(0.0,1.0 + (scrollEvent.getDeltaY() + scrollEvent.getDeltaX()) * sizeCoefficient);
+                double newSizeX = Double.valueOf(wField.getText()) * sizeChange;
+                double newSizeY = Double.valueOf(hField.getText()) * sizeChange;
+                newImage.fitWidthProperty().setValue(newSizeX);
+                newImage.fitHeightProperty().setValue(newSizeY);
+                scrollEvent.consume();
+            });
             HBox sizeBox = new HBox(sizeLabel, wLabel, wField, hLabel, hField);
             sizeBox.setSpacing(5);
 
@@ -105,22 +140,47 @@ public class ImageModeScene {
                 newImage.setX(0);
                 newImage.setY(0);
             });
+
+
+            Image crossImage = new Image(getClass().getResourceAsStream("cross.png"));
+            ImageView crossImageView = new ImageView(crossImage);
+            Button closeHelpButton = new Button();
+            HBox crossButtonBox = new HBox();
+
+            closeHelpButton.setGraphic(crossImageView);
+            closeHelpButton.getStylesheets().add("cross_button.css");
+
+            crossButtonBox.setAlignment(Pos.CENTER_RIGHT);
+            crossButtonBox.getChildren().add(closeHelpButton);
+
             CheckBox preserveRatioCheckBox = new CheckBox("Preserve ratio");
             preserveRatioCheckBox.selectedProperty().bindBidirectional(newImage.preserveRatioProperty());
             VBox imageSliders = new VBox(imageLabel, opacityBox, turnBox, sizeBox, preserveRatioCheckBox);
-            HBox imageControlsBox = new HBox(imageSliders, setToDefault);
+            VBox imageButtonsBox = new VBox(crossButtonBox, setToDefault);
+            HBox imageControlsBox = new HBox(imageSliders, imageButtonsBox);
             imageControlsBox.setSpacing(10);
-            imageControlsBox.setStyle("-fx-padding: 15px;");
+            imageControlsBox.setStyle("-fx-padding: 10px;");
 
-            imageControlsBox.setAlignment(Pos.CENTER);
+
+            closeHelpButton.setOnMouseClicked(me -> {
+                imageConrolsPane.getChildren().remove(imageControlsBox);
+                images.remove(newImage);
+                anchorPane.getChildren().remove(newImage);
+            });
+
+            imageControlsBox.setAlignment(Pos.TOP_LEFT);
             imageConrolsPane.getChildren().add(imageControlsBox);
             images.add(newImage);
 
             anchorPane.getChildren().add(newImage);
         });
 
+        buttonsPane.getChildren().addAll(backButton, uploadNewImageButton, saveButton);
+        buttonsPane.setSpacing(10);
+
         imageConrolsPane.setSpacing(10);
-        imageConrolsPane.getChildren().addAll(backButton, uploadNewImageButton);
+        imageConrolsPane.getChildren().addAll(buttonsPane);
+        imageConrolsPane.setAlignment(Pos.TOP_LEFT);
 
         imageControls.setContent(imageConrolsPane);
         leftPane.getPanes().addAll(imageControls);

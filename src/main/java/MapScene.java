@@ -12,6 +12,7 @@ import javafx.scene.Scene;
 import javafx.scene.SnapshotParameters;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.CheckBoxTreeCell;
+import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.image.WritableImage;
@@ -43,11 +44,51 @@ public class MapScene {
     private Tab mapTab = new Tab("Map");
     private Tab tableTap = new Tab("Table");
 
+    private TableView<JournalRecord> table = new TableView<>();
+    private TableColumn dateColumn = new TableColumn("Date");
+    private TableColumn shipColumn = new TableColumn("Ship");
+    private TableColumn latLngCoodrColumn = new TableColumn("Lat/Lng coordinate");
+    private TableColumn latColumn = new TableColumn("Latitude");
+    private TableColumn lngColumn = new TableColumn("Longtitude");
+    private TableColumn mqkColumn = new TableColumn("MQK");
+    private TableColumn commentColumn = new TableColumn("Comment");
+    private Accordion tableLeftPanel = new Accordion();
+    private TitledPane tableContentTitle = new TitledPane();
+    private BorderPane tableBorderPane = new BorderPane();
+
+    private Button addButton = new Button("Add");
+    private TextField dateField = new TextField();
+    private TextField shipField = new TextField();
+    private Label latLabel = new Label("Lat: ");
+    private Label lngLabel = new Label(", Lng: ");
+    private TextField latDegField = new TextField();
+    private Label degLatLabel = new Label("°");
+    private TextField latMinField = new TextField();
+    private Label minLatLabel = new Label("′");
+    private TextField lngDegField = new TextField();
+    private Label degLngLabel = new Label("°");
+    private TextField lngMinField = new TextField();
+    private Label minLngLabel = new Label("′");
+    private TextField mqkTextField = new TextField();
+    private TextField commentField = new TextField();
+    private HBox coordBox = new HBox(
+            latLabel,
+            latDegField, degLatLabel, latMinField, minLatLabel,
+            lngLabel,
+            lngDegField, degLngLabel, lngMinField, minLngLabel);
+    private HBox addToTableBox = new HBox(
+            dateField, shipField,
+            coordBox,
+            mqkTextField,
+            commentField,
+            addButton);
+
+    private VBox tableBox = new VBox(table, addToTableBox);
+
     private BorderPane mapPane = new BorderPane();
     private StackPane mapViewStack = new StackPane();
     private MapView mapView = new MapView();
     private Accordion leftPanel = new Accordion();
-
 
     private VBox mapSettingsPaneBox = new VBox();
     private TitledPane mapSettings = new TitledPane("Map settings", mapSettingsPaneBox);
@@ -58,7 +99,6 @@ public class MapScene {
     private RadioButton customMode = new RadioButton("Custom mode");
     private CheckBox showSquaresCheckBox = new CheckBox("Show relevant marinequadrates");
     private Button imageModeButton = new Button("Open image mode");
-
 
     private VBox contentSettingsPaneBox = new VBox();
     private TitledPane contentSettings = new TitledPane("Content settings", contentSettingsPaneBox);
@@ -89,7 +129,10 @@ public class MapScene {
     private ImageModeScene imageModeScene;
 
     public MapScene(final @NotNull Scene scene, final @NotNull Stage stage) {
-        imageModeScene = new ImageModeScene(stage, scene);
+        imageModeScene = new ImageModeScene(x -> {
+            imageModeButton.setDisable(false);
+            return null;
+        });
 
         final OfflineCache offlineCache = mapView.getOfflineCache();
         final String cacheDir = Path.of(System.getProperty("java.io.tmpdir"), "seamap-cache").toString();
@@ -101,6 +144,64 @@ public class MapScene {
         } catch (IOException e) {
             System.out.println(e.getMessage());
         }
+
+        tableBox.setSpacing(600);
+
+        latLngCoodrColumn.getColumns().addAll(latColumn, lngColumn);
+        table.getColumns().addAll(dateColumn, shipColumn, latLngCoodrColumn, mqkColumn, commentColumn);
+        dateColumn.setMinWidth(200);
+        shipColumn.setMinWidth(150);
+        latColumn.setMinWidth(200);
+        lngColumn.setMinWidth(200);
+        mqkColumn.setMinWidth(150);
+        commentColumn.setMinWidth(400);
+
+        tableBorderPane.setCenter(tableBox);
+        tableBorderPane.setLeft(tableLeftPanel);
+        tableTap.setContent(tableBorderPane);
+
+        dateField.setMinWidth(150);
+        latDegField.setMaxWidth(50);
+        latMinField.setMaxWidth(50);
+        lngDegField.setMaxWidth(50);
+        lngMinField.setMaxWidth(50);
+        commentField.setMinWidth(400);
+
+        addToTableBox.setSpacing(10);
+        dateField.setPromptText("DD.MM.YYYY г. HH.MM");
+        shipField.setPromptText("Ship name");
+        commentField.setPromptText("Comment");
+
+        dateColumn.setCellFactory(new PropertyValueFactory<JournalRecord, String>("date"));
+        shipColumn.setCellFactory(new PropertyValueFactory<JournalRecord, String>("ship"));
+        latColumn.setCellFactory(new PropertyValueFactory<JournalRecord, Double>("lat"));
+        lngColumn.setCellFactory(new PropertyValueFactory<JournalRecord, Double>("lng"));
+        mqkColumn.setCellFactory(new PropertyValueFactory<JournalRecord, String>("mqk"));
+        commentColumn.setCellFactory(new PropertyValueFactory<JournalRecord, String>("comment"));
+
+        tableContentTitle.setText("Table content");
+        tableLeftPanel.setMinWidth(400);
+        tableLeftPanel.getPanes().add(tableContentTitle);
+
+        addButton.setOnMouseClicked(mouseEvent -> {
+            JournalRecord record = new JournalRecord();
+            record.date = dateField.getText();
+            record.ship = shipField.getText();
+            record.lat = Double.valueOf(latDegField.getText()) + Double.valueOf(latMinField.getText()) * 1 / 60;
+            record.lng = Double.valueOf(lngMinField.getText()) + Double.valueOf(lngMinField.getText()) * 1 / 60;
+            record.comment = commentField.getText();
+
+            table.getItems().add(record);
+
+            dateField.clear();
+            shipField.clear();
+            latDegField.clear();
+            latMinField.clear();
+            lngDegField.clear();
+            lngMinField.clear();
+            mqkTextField.clear();
+            commentField.clear();
+        });
 
         mapView.initializedProperty().addListener((observableValue, aBoolean, t1) -> {
             mapView.setCenter(new Coordinate(10.0, 10.0));
@@ -145,15 +246,20 @@ public class MapScene {
         imageModeButton.setOnMouseClicked(mouseEvent -> {
             WritableImage mapSnapshot = mapView.snapshot(new SnapshotParameters(), null);
 
-            Stage newWindow = stage;
+            Stage newWindow = new Stage();
+
+            newWindow.setX(stage.getX() + 200);
+            newWindow.setY(stage.getY() + 100);
+            newWindow.setResizable(false);
 
             StackPane newStack = new StackPane();
             imageModeScene.setBackgroundImage(mapSnapshot);
             newStack.getChildren().add(imageModeScene.getMainPane());
-            Scene secondScene = new Scene(newStack);
+            Scene secondScene = new Scene(newStack, scene.getWidth(), scene.getHeight());
 
+            imageModeButton.setDisable(true);
             newWindow.setScene(secondScene);
-            newWindow.setFullScreen(true);
+            newWindow.show();
         });
 
         mapSettingsPaneBox.setSpacing(5.0);
