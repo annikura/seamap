@@ -18,10 +18,7 @@ import javafx.scene.image.ImageView;
 import javafx.scene.image.WritableImage;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
-import javafx.scene.layout.BorderPane;
-import javafx.scene.layout.HBox;
-import javafx.scene.layout.StackPane;
-import javafx.scene.layout.VBox;
+import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
@@ -35,6 +32,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -56,34 +54,9 @@ public class MapScene {
     private TitledPane tableContentTitle = new TitledPane();
     private BorderPane tableBorderPane = new BorderPane();
 
-    private Button addButton = new Button("Add");
-    private TextField dateField = new TextField();
-    private TextField shipField = new TextField();
-    private Label latLabel = new Label("Lat: ");
-    private Label lngLabel = new Label(", Lng: ");
-    private TextField latDegField = new TextField();
-    private Label degLatLabel = new Label("°");
-    private TextField latMinField = new TextField();
-    private Label minLatLabel = new Label("′");
-    private TextField lngDegField = new TextField();
-    private Label degLngLabel = new Label("°");
-    private TextField lngMinField = new TextField();
-    private Label minLngLabel = new Label("′");
-    private TextField mqkTextField = new TextField();
-    private TextField commentField = new TextField();
-    private HBox coordBox = new HBox(
-            latLabel,
-            latDegField, degLatLabel, latMinField, minLatLabel,
-            lngLabel,
-            lngDegField, degLngLabel, lngMinField, minLngLabel);
-    private HBox addToTableBox = new HBox(
-            dateField, shipField,
-            coordBox,
-            mqkTextField,
-            commentField,
-            addButton);
-
-    private VBox tableBox = new VBox(table, addToTableBox);
+    private Button addButton = new Button("Add row");
+    private Button deleteButton = new Button("Delete row");
+    private VBox tableContentTitleBox = new VBox(addButton, deleteButton);
 
     private BorderPane mapPane = new BorderPane();
     private StackPane mapViewStack = new StackPane();
@@ -135,6 +108,7 @@ public class MapScene {
         });
 
         final OfflineCache offlineCache = mapView.getOfflineCache();
+        // TODO: replace with a proper place
         final String cacheDir = Path.of(System.getProperty("java.io.tmpdir"), "seamap-cache").toString();
 
         try {
@@ -145,10 +119,14 @@ public class MapScene {
             System.out.println(e.getMessage());
         }
 
-        tableBox.setSpacing(600);
+        //tableScrollPane.setContent(table);
 
         latLngCoodrColumn.getColumns().addAll(latColumn, lngColumn);
+
         table.getColumns().addAll(dateColumn, shipColumn, latLngCoodrColumn, mqkColumn, commentColumn);
+        table.setEditable(true);
+        table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+
         dateColumn.setMinWidth(200);
         shipColumn.setMinWidth(150);
         latColumn.setMinWidth(200);
@@ -156,51 +134,38 @@ public class MapScene {
         mqkColumn.setMinWidth(150);
         commentColumn.setMinWidth(400);
 
-        tableBorderPane.setCenter(tableBox);
+        tableBorderPane.setCenter(table);
         tableBorderPane.setLeft(tableLeftPanel);
         tableTap.setContent(tableBorderPane);
 
-        dateField.setMinWidth(150);
-        latDegField.setMaxWidth(50);
-        latMinField.setMaxWidth(50);
-        lngDegField.setMaxWidth(50);
-        lngMinField.setMaxWidth(50);
-        commentField.setMinWidth(400);
-
-        addToTableBox.setSpacing(10);
-        dateField.setPromptText("DD.MM.YYYY г. HH.MM");
-        shipField.setPromptText("Ship name");
-        commentField.setPromptText("Comment");
-
-        dateColumn.setCellFactory(new PropertyValueFactory<JournalRecord, String>("date"));
-        shipColumn.setCellFactory(new PropertyValueFactory<JournalRecord, String>("ship"));
-        latColumn.setCellFactory(new PropertyValueFactory<JournalRecord, Double>("lat"));
-        lngColumn.setCellFactory(new PropertyValueFactory<JournalRecord, Double>("lng"));
-        mqkColumn.setCellFactory(new PropertyValueFactory<JournalRecord, String>("mqk"));
-        commentColumn.setCellFactory(new PropertyValueFactory<JournalRecord, String>("comment"));
+        dateColumn.setCellValueFactory(new PropertyValueFactory<JournalRecord, String>("date"));
+        shipColumn.setCellValueFactory(new PropertyValueFactory<JournalRecord, String>("ship"));
+        latColumn.setCellValueFactory(new PropertyValueFactory<JournalRecord, Double>("lat"));
+        lngColumn.setCellValueFactory(new PropertyValueFactory<JournalRecord, Double>("lng"));
+        mqkColumn.setCellValueFactory(new PropertyValueFactory<JournalRecord, String>("mqk"));
+        commentColumn.setCellValueFactory(new PropertyValueFactory<JournalRecord, String>("comment"));
 
         tableContentTitle.setText("Table content");
+        tableContentTitle.setContent(tableContentTitleBox);
+
         tableLeftPanel.setMinWidth(400);
         tableLeftPanel.getPanes().add(tableContentTitle);
+        tableLeftPanel.setExpandedPane(tableContentTitle);
 
         addButton.setOnMouseClicked(mouseEvent -> {
             JournalRecord record = new JournalRecord();
-            record.date = dateField.getText();
-            record.ship = shipField.getText();
-            record.lat = Double.valueOf(latDegField.getText()) + Double.valueOf(latMinField.getText()) * 1 / 60;
-            record.lng = Double.valueOf(lngMinField.getText()) + Double.valueOf(lngMinField.getText()) * 1 / 60;
-            record.comment = commentField.getText();
+            record.date = new Date();
+            record.ship = "";
+            record.lat = 0.0;
+            record.lng = 0.0;
+            record.comment = "";
 
             table.getItems().add(record);
+        });
 
-            dateField.clear();
-            shipField.clear();
-            latDegField.clear();
-            latMinField.clear();
-            lngDegField.clear();
-            lngMinField.clear();
-            mqkTextField.clear();
-            commentField.clear();
+        deleteButton.setOnAction(e -> {
+            JournalRecord selectedItem = table.getSelectionModel().getSelectedItem();
+            table.getItems().remove(selectedItem);
         });
 
         mapView.initializedProperty().addListener((observableValue, aBoolean, t1) -> {
