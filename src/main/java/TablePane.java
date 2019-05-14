@@ -26,7 +26,7 @@ public class TablePane {
     private Button addButton = new Button("Add row");
     private Button deleteButton = new Button("Delete selected row");
     private HBox tableEditButtons = new HBox(addButton, deleteButton);
-    private VBox tableContentTitleBox = new VBox(generateNewRowForm(t -> {}), tableEditButtons);
+    private VBox tableContentTitleBox;
 
     public TablePane() {
 
@@ -53,6 +53,14 @@ public class TablePane {
         mqkColumn.setCellValueFactory(new PropertyValueFactory<JournalRecord, String>("mqk"));
         commentColumn.setCellValueFactory(new PropertyValueFactory<JournalRecord, String>("comment"));
 
+        tableContentTitleBox = new VBox(generateNewRowForm(t -> {
+            addButton.setOnAction(a -> {
+                ErrorOr<JournalRecord> record = t.get();
+                System.out.println(record.getError());
+                table.getItems().add(record.get());
+            });
+        }), tableEditButtons);
+
         tableContentTitle.setText("Table content");
         tableContentTitle.setContent(tableContentTitleBox);
 
@@ -62,17 +70,6 @@ public class TablePane {
 
         tableEditButtons.setSpacing(20);
         tableContentTitleBox.setSpacing(20);
-
-        addButton.setOnAction(a -> {
-            JournalRecord record = new JournalRecord();
-            record.date = new Date();
-            record.ship = "";
-            record.lat = 0.0;
-            record.lng = 0.0;
-            record.comment = "";
-
-            table.getItems().add(record);
-        });
 
         deleteButton.setOnAction(e -> {
             JournalRecord selectedItem = table.getSelectionModel().getSelectedItem();
@@ -84,7 +81,7 @@ public class TablePane {
         return tableBorderPane;
     }
 
-    private Node generateNewRowForm(@NotNull Consumer<Supplier<JournalRecord>> newRowSupplierConsumer) {
+    private Node generateNewRowForm(@NotNull Consumer<Supplier<ErrorOr<JournalRecord>>> newRowSupplierConsumer) {
         Label dateLabel = new Label("Date/time");
         Label shipLabel = new Label("Ship");
         Label latLabel = new Label("Latitude");
@@ -100,28 +97,33 @@ public class TablePane {
         Label lngMinLabel = new Label("´");
 
         TextField dateField = new TextField();
+        dateField.setPromptText("20.01.2001 20:01");
         TextField shipField = new TextField();
 
         TextField lat1Field = new TextField();
         lat1Field.setMaxWidth(50);
+        lat1Field.setPromptText("0.0");
         TextField lat2Field = new TextField();
         lat2Field.setMaxWidth(50);
+        lat2Field.setPromptText("0.0");
         ComboBox latDirs = new ComboBox<String>();
         latDirs.setMinWidth(70);
         latDirs.getItems().addAll("N", "S");
-        latDirs.setValue("N");
+        latDirs.getSelectionModel().select(0);
 
         HBox latFields = new HBox(lat1Field, latDegLabel, lat2Field, latMinLabel, latDirs);
 
 
         TextField lng1Field = new TextField();
+        lng1Field.setPromptText("0.0");
         lng1Field.setMaxWidth(50);
         TextField lng2Field = new TextField();
+        lng2Field.setPromptText("0.0");
         lng2Field.setMaxWidth(50);
         ComboBox lngDirs = new ComboBox<String>();
         lngDirs.setMinWidth(70);
         lngDirs.getItems().addAll("W", "E");
-        lngDirs.setValue("W");
+        lngDirs.getSelectionModel().select(0);
         HBox lngFields = new HBox(lng1Field, lngDegLabel, lng2Field, lngMinLabel, lngDirs);
 
         TextField mqkField = new TextField();
@@ -132,7 +134,20 @@ public class TablePane {
         fields.setSpacing(4.0);
 
         newRowSupplierConsumer.accept(() -> {
-            return null;
+            ErrorOr<JournalRecord> possibleRecord = JournalRecord.tryCreating(
+                    dateField.getText(), shipField.getText(),
+                    lat1Field.getText(), lat2Field.getText(), latDirs.getSelectionModel().getSelectedItem().toString(),
+                    lng1Field.getText(), lng2Field.getText(), lngDirs.getSelectionModel().getSelectedItem().toString(),
+                    mqkField.getText(), commentText.getText());
+            if (!possibleRecord.isError()) {
+                lat1Field.clear();
+                lat2Field.clear();
+                lng1Field.clear();
+                lng2Field.clear();
+                mqkField.clear();
+                commentText.clear();
+            }
+            return possibleRecord;
         });
 
         HBox result = new HBox(labels, fields);
