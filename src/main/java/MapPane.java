@@ -38,13 +38,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class MapScene {
-    private TabPane mainPane = new TabPane();
-    private Tab mapTab = new Tab("Map");
-    private Tab tableTap = new Tab("Table");
-
-    private TablePane tablePane = new TablePane();
-
+public class MapPane {
     private BorderPane mapPane = new BorderPane();
     private StackPane mapViewStack = new StackPane();
     private MapView mapView = new MapView();
@@ -83,12 +77,13 @@ public class MapScene {
 
     private TreeView<String> visibilityControlsTree = new TreeView<>();
 
-    private ArrayList<ShipMapElements> shipMapElements = new ArrayList<>();
+    private ArrayList<MapPane.ShipMapElements> shipMapElements = new ArrayList<>();
     private HashMap<String, MarkerData> markerMapping = new HashMap<>();
 
     private ImageModeScene imageModeScene;
 
-    public MapScene(final @NotNull Scene scene, final @NotNull Stage stage) {
+
+    public MapPane(@NotNull Stage stage) {
         imageModeScene = new ImageModeScene(x -> {
             imageModeButton.setDisable(false);
             return null;
@@ -106,8 +101,6 @@ public class MapScene {
             System.out.println(e.getMessage());
         }
 
-        tableTap.setContent(tablePane.getTablePane());
-
         mapView.initializedProperty().addListener((observableValue, aBoolean, t1) -> {
             mapView.setCenter(new Coordinate(10.0, 10.0));
             mapView.setMapType(MapType.OSM);
@@ -115,6 +108,8 @@ public class MapScene {
             mapView.setZoom(5);
         });
         mapView.initialize();
+
+        // Setting up left pane.
 
         leftPanel.setMinWidth(400);
         leftPanel.getPanes().addAll(mapSettings, contentSettings);
@@ -152,6 +147,7 @@ public class MapScene {
             WritableImage mapSnapshot = mapView.snapshot(new SnapshotParameters(), null);
 
             Stage newWindow = new Stage();
+            newWindow.setOnCloseRequest(e -> imageModeButton.setDisable(false));
 
             newWindow.setX(stage.getX() + 200);
             newWindow.setY(stage.getY() + 100);
@@ -160,7 +156,7 @@ public class MapScene {
             StackPane newStack = new StackPane();
             imageModeScene.setBackgroundImage(mapSnapshot);
             newStack.getChildren().add(imageModeScene.getMainPane());
-            Scene secondScene = new Scene(newStack, scene.getWidth(), scene.getHeight());
+            Scene secondScene = new Scene(newStack, stage.getScene().getWidth(), stage.getScene().getHeight());
 
             imageModeButton.setDisable(true);
             newWindow.setScene(secondScene);
@@ -218,7 +214,7 @@ public class MapScene {
         generalInfoContent.setEditable(false);
         generalInfoContent.setStyle(
                 "-fx-background-color: transparent ;" +
-                "-fx-background-insets: 0px ;");
+                        "-fx-background-insets: 0px ;");
         VBox innerHelpBox = new VBox(generalInfoHeading, generalInfoContent);
         innerHelpBox.setStyle("-fx-padding: 15px;");
         helpBox.getChildren().addAll(closeHelpButton, innerHelpBox);
@@ -234,21 +230,17 @@ public class MapScene {
         mapPane.setBottom(statusBar);
         mapPane.setLeft(leftPanel);
 
-        mainPane.getTabs().addAll(mapTab, tableTap);
-        mapTab.setContent(mapPane);
-
-        scene.addEventHandler(KeyEvent.KEY_PRESSED, t -> {
+        stage.getScene().addEventHandler(KeyEvent.KEY_PRESSED, t -> {
             if (t.getCode()== KeyCode.ESCAPE) {
                 if (mapPane.getRight() != null) {
                     mapPane.setRight(null);
                 }
             }
         });
-
     }
 
-    public Node getMainPane() {
-        return mainPane;
+    public Node getMapPane() {
+        return mapPane;
     }
 
     void loadMapData(String filename) {
@@ -264,15 +256,15 @@ public class MapScene {
         MapData mapData = gson.fromJson(reader, MapData.class);
         mapView.setCenter(new Coordinate(mapData.mapCenterLat, mapData.mapCenterLng));
         mapView.addEventHandler(MarkerEvent.MARKER_CLICKED, event -> {
-                MarkerData markerData = markerMapping.get(event.getMarker().getId());
-                generalInfoContent.setText(
-                        "Ship: " + markerData.ship + "\n" +
-                        "Date: " + markerData.date + "\n" +
-                        "Coordinates: \n\tlat: " + markerData.coordinate.lat + "\n\tlng: " + markerData.coordinate.lng + "\n" +
-                        "Original coordinates: " + markerData.originalCoordinates + "\n");
-                if (markerData.comment != null && !markerData.comment.isEmpty())
+            MarkerData markerData = markerMapping.get(event.getMarker().getId());
+            generalInfoContent.setText(
+                    "Ship: " + markerData.ship + "\n" +
+                            "Date: " + markerData.date + "\n" +
+                            "Coordinates: \n\tlat: " + markerData.coordinate.lat + "\n\tlng: " + markerData.coordinate.lng + "\n" +
+                            "Original coordinates: " + markerData.originalCoordinates + "\n");
+            if (markerData.comment != null && !markerData.comment.isEmpty())
                 generalInfoContent.setText(generalInfoContent.getText() + "Comment: " + markerData.comment + "\n");
-                mapPane.setRight(helpBox);
+            mapPane.setRight(helpBox);
         });
 
         for (ShipData ship : mapData.ships) {
@@ -370,3 +362,5 @@ public class MapScene {
         }
     }
 }
+
+
