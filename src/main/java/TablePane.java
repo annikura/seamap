@@ -31,11 +31,11 @@ public class TablePane {
     private Button clearAllButton = new Button("Clear all");
 
     private Button loadCSVButton = new Button("Add from CSV");
-    private Button saveCSV = new Button("Save as CSV");
+    private Button saveCSVButton = new Button("Save as CSV");
 
     private TextArea errorMessage = new TextArea();
-    private HBox tableEditButtons = new HBox(addButton, deleteButton, errorMessage);
-    private HBox tableLoaderButtons = new HBox(loadCSVButton, saveCSV);
+    private HBox tableEditButtons = new HBox(addButton, deleteButton, clearAllButton);
+    private HBox tableLoaderButtons = new HBox(loadCSVButton, saveCSVButton);
     private VBox tableContentTitleBox;
 
 
@@ -119,6 +119,23 @@ public class TablePane {
                 }
                 for (JournalRecord record : possibleRecords.get()) {
                     table.getItems().add(record);
+                }
+            }
+        });
+        saveCSVButton.setOnAction(e -> {
+            FileChooser fileChooser = new FileChooser();
+            fileChooser.setTitle("Save to");
+            Stage saverStage = new Stage();
+            File file = fileChooser.showSaveDialog(saverStage);
+            if (file != null) {
+                ErrorOr<Void> result = DataLoader.uploadJournalRecords(file.getPath(), table.getItems());
+                if (result.isError()) {
+                    Alert alert = new Alert(Alert.AlertType.INFORMATION);
+                    alert.setTitle("Saving problem");
+                    alert.setHeaderText("Could not save file to " + file.getPath());
+                    alert.setContentText(result.getError());
+
+                    alert.showAndWait();
                 }
             }
         });

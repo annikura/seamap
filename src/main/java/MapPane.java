@@ -225,6 +225,7 @@ public class MapPane {
         generalInfoHeading.setOpaqueInsets(new Insets(20));
         generalInfoContent.setWrapText(true);
         generalInfoContent.setEditable(false);
+        generalInfoContent.setMinHeight(500);
         generalInfoContent.setStyle(
                 "-fx-background-color: transparent ;" +
                         "-fx-background-insets: 0px ;");
