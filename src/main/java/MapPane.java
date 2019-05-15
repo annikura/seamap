@@ -1,5 +1,3 @@
-import com.google.gson.Gson;
-import com.google.gson.stream.JsonReader;
 import com.sothawo.mapjfx.*;
 import com.sothawo.mapjfx.event.MapViewEvent;
 import com.sothawo.mapjfx.event.MarkerEvent;
@@ -27,8 +25,6 @@ import javafx.scene.text.FontWeight;
 import javafx.stage.Stage;
 import org.jetbrains.annotations.NotNull;
 
-import java.io.FileNotFoundException;
-import java.io.FileReader;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -63,6 +59,7 @@ public class MapPane {
     private Label bingApiLabel = new Label("Bing Api: ");
     private TextField bingApiField = new TextField();
     private HBox bingApiBox = new HBox(bingApiLabel, bingApiField);
+    private Button loadFromTableButton = new Button("Reload data from table");
 
     private HBox statusBar = new HBox();
     private Label currentCoordinatesLabel = new Label("Current coordinates (lat, lng):");
@@ -83,7 +80,7 @@ public class MapPane {
     private ImageModeScene imageModeScene;
 
 
-    public MapPane(@NotNull Stage stage) {
+    public MapPane(@NotNull Stage stage, @NotNull TablePane tablePane) {
         imageModeScene = new ImageModeScene(x -> {
             imageModeButton.setDisable(false);
             return null;
@@ -104,9 +101,21 @@ public class MapPane {
         mapView.initializedProperty().addListener((observableValue, aBoolean, t1) -> {
             mapView.setCenter(new Coordinate(10.0, 10.0));
             mapView.setMapType(MapType.OSM);
-            loadMapData(getClass().getResource("data.json").getPath());
+            mapView.addEventHandler(MarkerEvent.MARKER_CLICKED, event -> {
+                MarkerData markerData = markerMapping.get(event.getMarker().getId());
+                generalInfoContent.setText(
+                        "Ship: " + markerData.ship + "\n" +
+                                "Date: " + markerData.date + "\n" +
+                                "Coordinates: \n\tlat: " + markerData.coordinate.lat + "\n\tlng: " + markerData.coordinate.lng + "\n" +
+                                "Original coordinates: " + markerData.originalCoordinates + "\n");
+                if (markerData.comment != null && !markerData.comment.isEmpty())
+                    generalInfoContent.setText(generalInfoContent.getText() + "Comment: " + markerData.comment + "\n");
+                mapPane.setRight(helpBox);
+            });
+            // loadMapData(getClass().getResource("data.json").getPath());
             mapView.setZoom(5);
         });
+
         mapView.initialize();
 
         // Setting up left pane.
@@ -173,7 +182,11 @@ public class MapPane {
         // Initialize MapSettings
 
         mapTypeGroup.getToggles().addAll(osmMapRadioButton, bingRoadMapRadioButton, bingArealMapRadioButton);
-        contentSettingsPaneBox.getChildren().addAll(osmMapRadioButton, bingArealMapRadioButton, bingRoadMapRadioButton, bingApiBox);
+        contentSettingsPaneBox.getChildren().addAll(
+                osmMapRadioButton,
+                bingArealMapRadioButton,
+                bingRoadMapRadioButton,
+                bingApiBox, loadFromTableButton);
         contentSettingsPaneBox.setSpacing(10);
         contentSettingsPaneBox.setStyle("-fx-padding: 15px;");
         osmMapRadioButton.setSelected(true);
@@ -230,6 +243,11 @@ public class MapPane {
         mapPane.setBottom(statusBar);
         mapPane.setLeft(leftPanel);
 
+        loadFromTableButton.setOnAction(e -> {
+            clearOldData();
+            loadMapData(tablePane.getMapData());
+        });
+
         stage.getScene().addEventHandler(KeyEvent.KEY_PRESSED, t -> {
             if (t.getCode()== KeyCode.ESCAPE) {
                 if (mapPane.getRight() != null) {
@@ -243,29 +261,18 @@ public class MapPane {
         return mapPane;
     }
 
-    void loadMapData(String filename) {
-        Gson gson = new Gson();
-        JsonReader reader;
-        try {
-            reader = new JsonReader(new FileReader(filename));
-        } catch (FileNotFoundException e) {
-            // TODO: add log
-            return;
+    void clearOldData() {
+        visibilityControlsTree.getRoot().getChildren().clear();
+        for (MapPane.ShipMapElements shipMapElement : shipMapElements) {
+            shipMapElement.deleteShipElements(mapView);
         }
+        shipMapElements.clear();
+        mapPane.setRight(null);
+        showAll.setSelected(true);
+    }
 
-        MapData mapData = gson.fromJson(reader, MapData.class);
+    void loadMapData(@NotNull MapData mapData) {
         mapView.setCenter(new Coordinate(mapData.mapCenterLat, mapData.mapCenterLng));
-        mapView.addEventHandler(MarkerEvent.MARKER_CLICKED, event -> {
-            MarkerData markerData = markerMapping.get(event.getMarker().getId());
-            generalInfoContent.setText(
-                    "Ship: " + markerData.ship + "\n" +
-                            "Date: " + markerData.date + "\n" +
-                            "Coordinates: \n\tlat: " + markerData.coordinate.lat + "\n\tlng: " + markerData.coordinate.lng + "\n" +
-                            "Original coordinates: " + markerData.originalCoordinates + "\n");
-            if (markerData.comment != null && !markerData.comment.isEmpty())
-                generalInfoContent.setText(generalInfoContent.getText() + "Comment: " + markerData.comment + "\n");
-            mapPane.setRight(helpBox);
-        });
 
         for (ShipData ship : mapData.ships) {
             final ShipMapElements shipElements = new ShipMapElements(ship.markers, ship.color);
@@ -323,7 +330,9 @@ public class MapPane {
 
         private void deleteShipElements(final @NotNull MapView mapView) {
             markers.forEach(mapView::removeMarker);
+            markers.forEach(marker -> markerMapping.remove(marker.getId()));
             mapView.removeCoordinateLine(path);
+            marinequadrates.values().forEach(mapView::removeCoordinateLine);
         }
 
         private void setMarkersState(boolean visible) {

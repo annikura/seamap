@@ -6,8 +6,8 @@ import org.jetbrains.annotations.NotNull;
 
 public class MainScene {
     final private TabPane mainPane = new TabPane();
-    final private Tab mapTab = new Tab("Map");
     final private Tab tableTap = new Tab("Table");
+    final private Tab mapTab = new Tab("Map");
 
     final private TablePane tablePane = new TablePane();
     final private MapPane mapPane;
@@ -15,7 +15,7 @@ public class MainScene {
     public MainScene(final @NotNull Stage stage) {
 
         tableTap.setContent(tablePane.getTablePane());
-        mapPane = new MapPane(stage);
+        mapPane = new MapPane(stage, tablePane);
 
         mainPane.getTabs().addAll(mapTab, tableTap);
         mapTab.setContent(mapPane.getMapPane());

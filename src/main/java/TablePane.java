@@ -4,9 +4,12 @@ import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
+import javafx.stage.FileChooser;
+import javafx.stage.Stage;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.Date;
+import java.io.File;
+import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
@@ -25,8 +28,16 @@ public class TablePane {
 
     private Button addButton = new Button("Add row");
     private Button deleteButton = new Button("Delete selected row");
-    private HBox tableEditButtons = new HBox(addButton, deleteButton);
+    private Button clearAllButton = new Button("Clear all");
+
+    private Button loadCSVButton = new Button("Add from CSV");
+    private Button saveCSV = new Button("Save as CSV");
+
+    private TextArea errorMessage = new TextArea();
+    private HBox tableEditButtons = new HBox(addButton, deleteButton, errorMessage);
+    private HBox tableLoaderButtons = new HBox(loadCSVButton, saveCSV);
     private VBox tableContentTitleBox;
+
 
     public TablePane() {
 
@@ -56,10 +67,14 @@ public class TablePane {
         tableContentTitleBox = new VBox(generateNewRowForm(t -> {
             addButton.setOnAction(a -> {
                 ErrorOr<JournalRecord> record = t.get();
-                System.out.println(record.getError());
-                table.getItems().add(record.get());
+                if (record.isError()) {
+                    errorMessage.setText(record.getError());
+                } else {
+                    errorMessage.clear();
+                    table.getItems().add(record.get());
+                }
             });
-        }), tableEditButtons);
+        }), tableEditButtons, tableLoaderButtons, errorMessage);
 
         tableContentTitle.setText("Table content");
         tableContentTitle.setContent(tableContentTitleBox);
@@ -69,11 +84,43 @@ public class TablePane {
         tableLeftPanel.setExpandedPane(tableContentTitle);
 
         tableEditButtons.setSpacing(20);
-        tableContentTitleBox.setSpacing(20);
+        tableLoaderButtons.setSpacing(20);
+        tableContentTitleBox.setSpacing(10);
+
+        errorMessage.setMaxWidth(380);
+        errorMessage.setWrapText(true);
+        errorMessage.setEditable(false);
+        errorMessage.setStyle(
+                "-fx-background-color: transparent ;" +
+                        "-fx-background-insets: 0px ;");
+
 
         deleteButton.setOnAction(e -> {
             JournalRecord selectedItem = table.getSelectionModel().getSelectedItem();
             table.getItems().remove(selectedItem);
+        });
+
+        clearAllButton.setOnAction(e -> table.getItems().clear());
+        loadCSVButton.setOnAction(e -> {
+            FileChooser fileChooser = new FileChooser();
+            fileChooser.setTitle("Choose file to load from");
+            Stage loaderStage = new Stage();
+            File file = fileChooser.showOpenDialog(loaderStage);
+            if (file != null) {
+                ErrorOr<List<JournalRecord>> possibleRecords = DataLoader.downloadRecords(file.getName());
+                if (possibleRecords.isError()) {
+                    Alert alert = new Alert(Alert.AlertType.INFORMATION);
+                    alert.setTitle("Loading problem");
+                    alert.setHeaderText("An error happened while trying to upload " + file.getPath() + " csv file.");
+                    alert.setContentText(possibleRecords.getError());
+
+                    alert.showAndWait();
+                    return;
+                }
+                for (JournalRecord record : possibleRecords.get()) {
+                    table.getItems().add(record);
+                }
+            }
         });
     }
 
@@ -154,5 +201,9 @@ public class TablePane {
         HBox result = new HBox(labels, fields);
         result.setSpacing(20.0);
         return result;
+    }
+
+    public MapData getMapData() {
+        return RecordsProcesser.processRecords(table.getItems());
     }
 }

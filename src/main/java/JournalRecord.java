@@ -1,16 +1,20 @@
 import org.jetbrains.annotations.NotNull;
 
+import java.io.File;
 import java.text.ParsePosition;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
 public class JournalRecord {
-    Date date;
+    String date;
     String ship;
     Double lat;
     Double lng;
     String mqk;
     String comment;
+    ArrayList<CoordinateData> square = null;
 
     public Double getLat() {
         return lat;
@@ -59,7 +63,7 @@ public class JournalRecord {
         if (parsedDate == null) {
             return ErrorOr.createErr("Invalid date format. Date must match the following pattern: " + pattern);
         }
-        journalRecord.date = parsedDate;
+        journalRecord.date = simpleDateFormat.format(parsedDate);
         journalRecord.ship = ship;
 
         if (lat1.isEmpty() && lat2.isEmpty()) {
@@ -120,12 +124,63 @@ public class JournalRecord {
 
         journalRecord.mqk = mqk.isEmpty() ? null : mqk;
 
-        // TODO: valudate mqk
+        if (journalRecord.mqk != null) {
+            String square = mqk.substring(0, 2);
+            File squareFile = new File(journalRecord.getClass().getResource(square).getPath());
+            if (!squareFile.exists()) {
+                return ErrorOr.createErr("Unknown Kriegsmarine Marinequadrat coordinate: " + square);
+            }
+
+            String subsquare = mqk.substring(2).strip();
+            int subsquareNumber;
+            try {
+                subsquareNumber = subsquare.isEmpty() ? 0 : Integer.parseInt(subsquare);
+            } catch (NumberFormatException e) {
+                return ErrorOr.createErr("MQK subsquare coordinate is not a number (or absent).");
+            }
+            if (subsquareNumber < 0 || subsquareNumber > 10000) {
+                return ErrorOr.createErr("MQK subsquare coordinate is out of range 0..9999.");
+            }
+            ErrorOr<List<List<String>>> squareCoordinates = DataLoader.downloadCSV(squareFile.getPath());
+            if (squareCoordinates.isError()) {
+                return ErrorOr.createErr(
+                        "Error extracting mqk coordinate " + mqk + ": " + squareCoordinates.getError());
+            }
+            if (squareCoordinates.get().size() < subsquareNumber
+                    || squareCoordinates.get().get(subsquareNumber).size() < 6) {
+                return ErrorOr.createErr("Unknown mqk subsquare: " + subsquareNumber);
+            }
+            double[] mqkCoordinates = squareCoordinates.get().get(subsquareNumber)
+                    .stream()
+                    .mapToDouble(Double::parseDouble)
+                    .toArray();
+            journalRecord.lat = journalRecord.lat == null ? mqkCoordinates[0] : journalRecord.lat;
+            journalRecord.lng = journalRecord.lng == null ? mqkCoordinates[1] : journalRecord.lng;
+            journalRecord.square = new ArrayList<>();
+
+            for (int i = 1; i < mqkCoordinates.length / 2; i++) {
+                journalRecord.square.add(new CoordinateData(mqkCoordinates[i * 2], mqkCoordinates[i * 2 + 1]));
+            }
+        }
+
         if (journalRecord.mqk == null && journalRecord.lat == null && journalRecord.lng == null) {
             return ErrorOr.createErr("Either longitude/latitude or mqk must be specified.");
         }
 
-        journalRecord.comment = comment;
+        String[] lines = comment.split("\\r?\\n");
+        for (int i = 0; i < lines.length; i++) {
+            String line = lines[i];
+            StringBuilder builder = new StringBuilder();
+            int symbolsPerLine = 25;
+            for (int j = 0; j * symbolsPerLine < line.length(); j++) {
+                builder.append(line, j * symbolsPerLine, Math.min((j + 1) * symbolsPerLine, line.length()));
+                builder.append("\n");
+            }
+            lines[i] = builder.toString();
+        }
+
+        journalRecord.comment = String.join("\n", lines);
+
         return ErrorOr.createObj(journalRecord);
     }
 }
