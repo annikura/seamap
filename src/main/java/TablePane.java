@@ -127,6 +127,7 @@ public class TablePane {
         HBox lngFields = new HBox(lng1Field, lngDegLabel, lng2Field, lngMinLabel, lngDirs);
 
         TextField mqkField = new TextField();
+        mqkField.setPromptText("AA1234");
         TextArea commentText = new TextArea();
         commentText.setMaxWidth(280);
 
