@@ -87,8 +87,7 @@ public class MapPane {
         });
 
         final OfflineCache offlineCache = mapView.getOfflineCache();
-        // TODO: replace with a proper place
-        final String cacheDir = Path.of(System.getProperty("java.io.tmpdir"), "seamap-cache").toString();
+        final String cacheDir = "seamap-cache";
 
         try {
             Files.createDirectories(Paths.get(cacheDir));

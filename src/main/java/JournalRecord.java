@@ -132,23 +132,29 @@ public class JournalRecord {
         lng = lng.strip();
         mqk = mqk.strip();
 
-        double latd;
-        double lngd;
+        if (!lat.isEmpty() || !lng.isEmpty()) {
+            double latd;
+            double lngd;
 
-        try {
-            latd = Double.parseDouble(lat);
-        } catch (NumberFormatException e) {
-            return ErrorOr.createErr("Latitude is expected to be a number.");
+
+            lat = lat.isEmpty() ? "0.0" : lat;
+            lng = lng.isEmpty() ? "0.0" : lng;
+
+            try {
+                latd = Double.parseDouble(lat);
+            } catch (NumberFormatException e) {
+                return ErrorOr.createErr("Latitude is expected to be a number.");
+            }
+
+            try {
+                lngd = Double.parseDouble(lng);
+            } catch (NumberFormatException e) {
+                return ErrorOr.createErr("Longitude is expected to be a number.");
+            }
+
+            journalRecord.lat = latd;
+            journalRecord.lng = lngd;
         }
-
-        try {
-            lngd = Double.parseDouble(lng);
-        } catch (NumberFormatException e) {
-            return ErrorOr.createErr("Longitude is expected to be a number.");
-        }
-
-        journalRecord.lat = latd;
-        journalRecord.lng = lngd;
 
         String pattern = "dd.MM.yyyy HH:mm";
         SimpleDateFormat simpleDateFormat = new SimpleDateFormat(pattern);
@@ -200,15 +206,11 @@ public class JournalRecord {
             }
         }
 
-        if (journalRecord.mqk == null && journalRecord.lat == null && journalRecord.lng == null) {
-            return ErrorOr.createErr("Either longitude/latitude or mqk must be specified.");
-        }
-
         String[] lines = comment.split("\\r?\\n");
         for (int i = 0; i < lines.length; i++) {
             String line = lines[i];
             StringBuilder builder = new StringBuilder();
-            int symbolsPerLine = 25;
+            int symbolsPerLine = 32;
             for (int j = 0; j * symbolsPerLine < line.length(); j++) {
                 builder.append(line, j * symbolsPerLine, Math.min((j + 1) * symbolsPerLine, line.length()));
                 builder.append("\n");
