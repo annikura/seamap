@@ -29,7 +29,7 @@ public class JournalRecord {
     }
 
     public String getDate() {
-        return date.toString();
+        return date;
     }
 
     public String getMqk() {
@@ -156,20 +156,29 @@ public class JournalRecord {
             journalRecord.lng = lngd;
         }
 
-        String pattern = "dd.MM.yyyy HH:mm";
-        SimpleDateFormat simpleDateFormat = new SimpleDateFormat(pattern);
-        Date parsedDate = simpleDateFormat.parse(date, new ParsePosition(0));
-        if (parsedDate == null) {
-            return ErrorOr.createErr("Invalid date format. Date must match the following pattern: " + pattern);
+        if (date.isEmpty()) {
+            journalRecord.date = null;
+        } else {
+            String pattern = "dd.MM.yyyy HH:mm";
+            SimpleDateFormat simpleDateFormat = new SimpleDateFormat(pattern);
+            Date parsedDate = simpleDateFormat.parse(date, new ParsePosition(0));
+            if (parsedDate == null) {
+                return ErrorOr.createErr("Invalid date format. Date must match the following pattern: " + pattern);
+            }
+            journalRecord.date = simpleDateFormat.format(parsedDate);
         }
-        journalRecord.date = simpleDateFormat.format(parsedDate);
         journalRecord.ship = ship;
 
         journalRecord.mqk = mqk.isEmpty() ? null : mqk;
 
         if (journalRecord.mqk != null) {
-            String square = mqk.substring(0, 2);
-            File squareFile = new File(journalRecord.getClass().getResource(square).getPath());
+            String square = mqk.substring(0, 2).toUpperCase();
+            File squareFile;
+            try {
+                squareFile = new File(journalRecord.getClass().getResource(square).getPath());
+            } catch (NullPointerException e) {
+                return ErrorOr.createErr("Unknown Kriegsmarine Marinequadrat coordinate: " + square);
+            }
             if (!squareFile.exists()) {
                 return ErrorOr.createErr("Unknown Kriegsmarine Marinequadrat coordinate: " + square);
             }

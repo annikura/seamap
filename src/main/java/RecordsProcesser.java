@@ -13,7 +13,7 @@ public class RecordsProcesser {
     }
 
     public static MapData processRecords(@NotNull List<JournalRecord> records) {
-        records = records.stream().filter(journalRecord -> journalRecord.date != null &&
+        records = records.stream().filter(journalRecord -> journalRecord.ship != null && journalRecord.date != null &&
                 (journalRecord.lat != null && journalRecord.lng != null || journalRecord.mqk != null))
                 .collect(Collectors.toList());
         Map<String, ArrayList<Integer>> groupping = collectRecordsByShip(records);

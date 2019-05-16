@@ -115,8 +115,24 @@ public class ImageModeScene {
             Label hLabel = new Label("H");
             TextField wField = new TextField(String.valueOf(newImage.getBoundsInParent().getWidth()));
             TextField hField = new TextField(String.valueOf(newImage.getBoundsInParent().getHeight()));
-            wField.setOnAction(actionEvent -> newImage.setFitWidth(Double.valueOf(wField.getText())));
-            hField.setOnAction(actionEvent -> newImage.setFitHeight(Double.valueOf(hField.getText())));
+            wField.setOnAction(actionEvent -> {
+                double newWidth;
+                try {
+                    newWidth = Double.valueOf(wField.getText());
+                } catch (NumberFormatException ignored) {
+                    return;
+                }
+                newImage.setFitWidth(newWidth);
+            });
+            hField.setOnAction(actionEvent -> {
+                double newHeight;
+                try {
+                    newHeight = Double.valueOf(hField.getText());
+                } catch (NumberFormatException ignored) {
+                    return;
+                }
+                newImage.setFitHeight(newHeight);
+            });
             wField.setMaxWidth(70);
             hField.setMaxWidth(70);
             newImage.fitWidthProperty().addListener((observableValue, oldVal, newVal) ->
@@ -124,7 +140,7 @@ public class ImageModeScene {
             newImage.fitHeightProperty().addListener((observableValue, oldVal, newVal) ->
                     hField.setText(String.valueOf(newVal.doubleValue())));
             newImage.setOnScroll(scrollEvent -> {
-                double sizeCoefficient = 0.0005;
+                double sizeCoefficient = 0.001;
                 double sizeChange = Double.max(0.0,1.0 + (scrollEvent.getDeltaY() + scrollEvent.getDeltaX()) * sizeCoefficient);
                 double newSizeX = Double.valueOf(wField.getText()) * sizeChange;
                 double newSizeY = Double.valueOf(hField.getText()) * sizeChange;
@@ -135,8 +151,8 @@ public class ImageModeScene {
             HBox sizeBox = new HBox(sizeLabel, wLabel, wField, hLabel, hField);
             sizeBox.setSpacing(5);
 
-            Button setToDefault = new Button("To (0, 0)");
-            setToDefault.setOnMouseClicked(mouseEvent1 -> {
+            Button setToDefault = new Button("Find");
+            setToDefault.setOnAction(mouseEvent1 -> {
                 newImage.setX(0);
                 newImage.setY(0);
             });
@@ -155,14 +171,14 @@ public class ImageModeScene {
 
             CheckBox preserveRatioCheckBox = new CheckBox("Preserve ratio");
             preserveRatioCheckBox.selectedProperty().bindBidirectional(newImage.preserveRatioProperty());
-            VBox imageSliders = new VBox(imageLabel, opacityBox, turnBox, sizeBox, preserveRatioCheckBox);
+            VBox imageSliders = new VBox(imageLabel, opacityBox, turnBox, sizeBox);
             VBox imageButtonsBox = new VBox(crossButtonBox, setToDefault);
             HBox imageControlsBox = new HBox(imageSliders, imageButtonsBox);
             imageControlsBox.setSpacing(10);
             imageControlsBox.setStyle("-fx-padding: 10px;");
 
 
-            closeHelpButton.setOnMouseClicked(me -> {
+            closeHelpButton.setOnAction(me -> {
                 imageConrolsPane.getChildren().remove(imageControlsBox);
                 images.remove(newImage);
                 anchorPane.getChildren().remove(newImage);
