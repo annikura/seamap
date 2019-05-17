@@ -5,9 +5,6 @@ import org.jetbrains.annotations.NotNull;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.io.Writer;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -43,18 +40,18 @@ public class DataLoader {
     public static ErrorOr<Void> uploadJournalRecords(@NotNull String filename, @NotNull List<JournalRecord> data) {
         return uploadCSV(filename, data.stream().map(journalRecord -> {
             List<String> line = new ArrayList<>();
-            line.add(journalRecord.date);
-            line.add(journalRecord.ship);
-            line.add(journalRecord.lat.toString());
-            line.add(journalRecord.lng.toString());
-            line.add(journalRecord.mqk);
-            line.add(journalRecord.comment);
+            line.add(journalRecord.date == null ? "" : journalRecord.date);
+            line.add(journalRecord.ship == null ? "" : journalRecord.ship);
+            line.add(journalRecord.lat == null ? "" : journalRecord.lat.toString());
+            line.add(journalRecord.lng == null ? "" : journalRecord.lng.toString());
+            line.add(journalRecord.mqk == null ? "" : journalRecord.mqk);
+            line.add(journalRecord.comment == null ? "" : journalRecord.comment);
             return line;
         }).collect(Collectors.toList()));
     }
 
 
-    public static ErrorOr<List<JournalRecord>> downloadRecords(@NotNull String filename) {
+    public static ErrorOr<List<JournalRecord>> downloadJournalRecords(@NotNull String filename) {
         ErrorOr<List<List<String>>> csv = downloadCSV(filename);
         if (csv.isError()) {
             return ErrorOr.createErr(csv.getError());
@@ -84,4 +81,45 @@ public class DataLoader {
         return ErrorOr.createObj(records);
     }
 
+    public static ErrorOr<Void> uploadWeatherRecords(@NotNull String filename, @NotNull List<WeatherRecord> records) {
+        return uploadCSV(filename, records.stream().map(weatherRecord -> {
+            List<String> line = new ArrayList<>();
+            line.add(weatherRecord.date == null ? "" : weatherRecord.date);
+            line.add(weatherRecord.source == null ? "" : weatherRecord.source);
+            line.add(weatherRecord.windStrength == null ? "" : weatherRecord.windStrength.toString());
+            line.add(weatherRecord.windDirection == null ? "" : weatherRecord.windDirection);
+            line.add(weatherRecord.visibilityRange == null ? "" : weatherRecord.visibilityRange.toString());
+            return line;
+        }).collect(Collectors.toList()));
+
+    }
+
+    public static ErrorOr<List<WeatherRecord>> downloadWeatherRecords(@NotNull String filename) {
+        ErrorOr<List<List<String>>> csv = downloadCSV(filename);
+        if (csv.isError()) {
+            return ErrorOr.createErr(csv.getError());
+        }
+        final int NUMBER_OF_RECORDS = 5;
+        List<List<String>> stringRecords = csv.get();
+        List<WeatherRecord> records = new ArrayList<>();
+        for (int i = 0; i < stringRecords.size(); i++) {
+            List<String> stringRecord = stringRecords.get(i);
+            if (stringRecord.size() != NUMBER_OF_RECORDS) {
+                return ErrorOr.createErr(
+                        "Upload failure: expected " + NUMBER_OF_RECORDS
+                                + " records in every line, found " + stringRecord.size() + " in line " + i);
+            }
+            ErrorOr<WeatherRecord> newRecord = WeatherRecord.tryCreating(
+                    stringRecord.get(0),
+                    stringRecord.get(1),
+                    stringRecord.get(2),
+                    stringRecord.get(3),
+                    stringRecord.get(4));
+            if (newRecord.isError()) {
+                return ErrorOr.createErr("Upload failure: validation failure in line " + i + ": " + newRecord.getError());
+            }
+            records.add(newRecord.get());
+        }
+        return ErrorOr.createObj(records);
+    }
 }

@@ -13,7 +13,7 @@ import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
-public class TablePane {
+public class JournalPane {
     private TableView<JournalRecord> table = new TableView<>();
     private TableColumn dateColumn = new TableColumn("Date");
     private TableColumn shipColumn = new TableColumn("Ship");
@@ -39,7 +39,7 @@ public class TablePane {
     private VBox tableContentTitleBox;
 
 
-    public TablePane() {
+    public JournalPane() {
 
         latLngCoodrColumn.getColumns().addAll(latColumn, lngColumn);
 
@@ -107,7 +107,7 @@ public class TablePane {
             Stage loaderStage = new Stage();
             File file = fileChooser.showOpenDialog(loaderStage);
             if (file != null) {
-                ErrorOr<List<JournalRecord>> possibleRecords = DataLoader.downloadRecords(file.getName());
+                ErrorOr<List<JournalRecord>> possibleRecords = DataLoader.downloadJournalRecords(file.getName());
                 if (possibleRecords.isError()) {
                     Alert alert = new Alert(Alert.AlertType.INFORMATION);
                     alert.setTitle("Loading problem");
@@ -220,7 +220,7 @@ public class TablePane {
         return result;
     }
 
-    public MapData getMapData() {
-        return RecordsProcesser.processRecords(table.getItems());
+    public List<JournalRecord> getRecords() {
+        return table.getItems();
     }
 }

@@ -12,11 +12,12 @@ public class RecordsProcesser {
         colours.add("green");
     }
 
-    public static MapData processRecords(@NotNull List<JournalRecord> records) {
-        records = records.stream().filter(journalRecord -> journalRecord.ship != null && journalRecord.date != null &&
+    public static MapData processRecords(@NotNull List<JournalRecord> journalRecords,
+                                         @NotNull List<WeatherRecord> weatherRecords) {
+        journalRecords = journalRecords.stream().filter(journalRecord -> journalRecord.ship != null && journalRecord.date != null &&
                 (journalRecord.lat != null && journalRecord.lng != null || journalRecord.mqk != null))
                 .collect(Collectors.toList());
-        Map<String, ArrayList<Integer>> groupping = collectRecordsByShip(records);
+        Map<String, ArrayList<Integer>> groupping = collectRecordsByShip(journalRecords);
 
         double mapLatCenter = 0;
         double mapLngCenter = 0;
@@ -36,7 +37,7 @@ public class RecordsProcesser {
 
             List<MarkerData> markerRecords = new ArrayList<>();
             for (int id : groupping.get(ship)) {
-                JournalRecord markerRecord = records.get(id);
+                JournalRecord markerRecord = journalRecords.get(id);
                 MarkerData markerData = new MarkerData();
                 markerData.date = markerRecord.date;
 

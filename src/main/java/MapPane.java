@@ -27,7 +27,6 @@ import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -80,7 +79,7 @@ public class MapPane {
     private ImageModeScene imageModeScene;
 
 
-    public MapPane(@NotNull Stage stage, @NotNull TablePane tablePane) {
+    public MapPane(@NotNull Stage stage, @NotNull JournalPane journalPane, @NotNull WeatherPane weatherPane) {
         imageModeScene = new ImageModeScene(x -> {
             imageModeButton.setDisable(false);
             return null;
@@ -245,7 +244,7 @@ public class MapPane {
 
         loadFromTableButton.setOnAction(e -> {
             clearOldData();
-            loadMapData(tablePane.getMapData());
+            loadMapData(RecordsProcesser.processRecords(journalPane.getRecords(), weatherPane.getRecords()));
         });
 
         stage.getScene().addEventHandler(KeyEvent.KEY_PRESSED, t -> {
