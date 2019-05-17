@@ -24,6 +24,7 @@ import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.stage.Stage;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -40,7 +41,7 @@ public class MapPane {
     private Accordion leftPanel = new Accordion();
 
     private VBox mapSettingsPaneBox = new VBox();
-    private TitledPane mapSettings = new TitledPane("Map settings", mapSettingsPaneBox);
+    private TitledPane mapSettings = new TitledPane("Content settings", mapSettingsPaneBox);
     private ToggleGroup visibilityToggle = new ToggleGroup();
     private RadioButton showAll = new RadioButton("Show everything");
     private RadioButton showOnlyMarkers = new RadioButton("Show markers only");
@@ -50,7 +51,7 @@ public class MapPane {
     private Button imageModeButton = new Button("Open image mode");
 
     private VBox contentSettingsPaneBox = new VBox();
-    private TitledPane contentSettings = new TitledPane("Content settings", contentSettingsPaneBox);
+    private TitledPane contentSettings = new TitledPane("Map settings", contentSettingsPaneBox);
     private RadioButton osmMapRadioButton = new RadioButton("OpenStreetMap");
     private RadioButton bingRoadMapRadioButton = new RadioButton("Bing road");
     private RadioButton bingArealMapRadioButton = new RadioButton("Bing areal");
@@ -93,11 +94,7 @@ public class MapPane {
             mapView.setMapType(MapType.OSM);
             mapView.addEventHandler(MarkerEvent.MARKER_CLICKED, event -> {
                 MarkerData markerData = markerMapping.get(event.getMarker().getId());
-                generalInfoContent.setText(
-                        "Ship: " + markerData.ship + "\n" +
-                                "Date: " + markerData.date + "\n" +
-                                "Coordinates: \n\tlat: " + markerData.coordinate.lat + "\n\tlng: " + markerData.coordinate.lng + "\n" +
-                                "Original coordinates: " + markerData.originalCoordinates + "\n");
+                generalInfoContent.setText(generateGeneralReport(markerData));
                 if (markerData.comment != null && !markerData.comment.isEmpty())
                     generalInfoContent.setText(generalInfoContent.getText() + "Comment: " + markerData.comment + "\n");
                 mapPane.setRight(helpBox);
@@ -175,7 +172,8 @@ public class MapPane {
                 showAll, showOnlyMarkers, showOnlyPaths, customMode,
                 visibilityControlsTree,
                 showSquaresCheckBox,
-                imageModeButton);
+                imageModeButton,
+                loadFromTableButton);
 
         // Initialize MapSettings
 
@@ -184,7 +182,7 @@ public class MapPane {
                 osmMapRadioButton,
                 bingArealMapRadioButton,
                 bingRoadMapRadioButton,
-                bingApiBox, loadFromTableButton);
+                bingApiBox);
         contentSettingsPaneBox.setSpacing(10);
         contentSettingsPaneBox.setStyle("-fx-padding: 15px;");
         osmMapRadioButton.setSelected(true);
@@ -368,6 +366,72 @@ public class MapPane {
                             .forEach(line -> line.setVisible(
                                     (markersVisibility.get() || pathVisibility.get()) && showSquaresCheckBox.isSelected())));
         }
+    }
+
+    @NotNull
+    private String generateGeneralReport(@NotNull MarkerData markerData) {
+        StringBuilder builder = new StringBuilder();
+        builder.append("Ship: ");
+        builder.append(markerData.ship);
+        builder.append(System.lineSeparator());
+        builder.append("Date: ");
+        builder.append(markerData.date);
+        builder.append(System.lineSeparator());
+        builder.append("Coordinate: ");
+        builder.append(System.lineSeparator());
+        builder.append("\t");
+        builder.append("lat: ");
+        builder.append(markerData.coordinate.lat);
+        builder.append(System.lineSeparator());
+        builder.append("\t");
+        builder.append("lng: ");
+        builder.append(markerData.coordinate.lng);
+        builder.append(System.lineSeparator());
+
+        if (!markerData.originalCoordinates.equals("")) {
+            builder.append("Original coordinates: ");
+            builder.append(markerData.originalCoordinates);
+            builder.append(System.lineSeparator());
+        }
+
+        if (markerData.weatherData != null) {
+            builder.append(System.lineSeparator());
+            builder.append(generateWeatherReport(markerData.weatherData));
+        }
+
+        return builder.toString();
+    }
+
+    @NotNull
+    private String generateWeatherReport(@NotNull WeatherData weatherData) {
+        StringBuilder builder = new StringBuilder();
+        builder.append("Weather data");
+        builder.append(System.lineSeparator());
+        if (weatherData.source != null) {
+            builder.append("Source: ");
+            builder.append(weatherData.source);
+            builder.append(System.lineSeparator());
+        }
+
+        if (weatherData.windDirection != null) {
+            builder.append("Wind direction: ");
+            builder.append(weatherData.windDirection);
+            builder.append(System.lineSeparator());
+        }
+
+        if (weatherData.strength != null) {
+            builder.append("Wind strength: ");
+            builder.append(weatherData.strength);
+            builder.append(System.lineSeparator());
+        }
+
+
+        if (weatherData.visibility != null) {
+            builder.append("Visibility range: ");
+            builder.append(weatherData.visibility);
+            builder.append(System.lineSeparator());
+        }
+        return builder.toString();
     }
 }
 

@@ -1,9 +1,7 @@
 import java.util.List;
 
 public class MarkerData {
-    Double windLat;
-    Double windLng;
-    Double visibility;
+    WeatherData weatherData;
 
     CoordinateData coordinate;
 

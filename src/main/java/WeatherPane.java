@@ -39,7 +39,7 @@ public class WeatherPane {
 
     public WeatherPane() {
 
-        table.getColumns().addAll(dateColumn, sourceColumn, windDirectionColumn, windStrengthColumn, visibilityRangeColumn);
+        table.getColumns().addAll(dateColumn, sourceColumn, windStrengthColumn, windDirectionColumn, visibilityRangeColumn);
         table.setEditable(true);
         table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
 
