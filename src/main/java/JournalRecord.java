@@ -211,7 +211,7 @@ public class JournalRecord {
             journalRecord.square = new ArrayList<>();
 
             for (int i = 1; i < mqkCoordinates.length / 2; i++) {
-                journalRecord.square.add(new CoordinateData(mqkCoordinates[i * 2], mqkCoordinates[i * 2 + 1]));
+                journalRecord.square.add(new CoordinateData(mqkCoordinates[i * 2 + 1], mqkCoordinates[i * 2]));
             }
         }
 

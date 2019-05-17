@@ -89,14 +89,6 @@ public class MapPane {
         final OfflineCache offlineCache = mapView.getOfflineCache();
         final String cacheDir = "seamap-cache";
 
-        try {
-            Files.createDirectories(Paths.get(cacheDir));
-            offlineCache.setCacheDirectory(cacheDir);
-            offlineCache.setActive(true);
-        } catch (IOException e) {
-            System.out.println(e.getMessage());
-        }
-
         mapView.initializedProperty().addListener((observableValue, aBoolean, t1) -> {
             mapView.setCenter(new Coordinate(10.0, 10.0));
             mapView.setMapType(MapType.OSM);
@@ -113,6 +105,14 @@ public class MapPane {
             });
             // loadMapData(getClass().getResource("data.json").getPath());
             mapView.setZoom(5);
+
+            try {
+                Files.createDirectories(Paths.get(cacheDir));
+                offlineCache.setCacheDirectory(cacheDir);
+                offlineCache.setActive(true);
+            } catch (IOException e) {
+                System.out.println(e.getMessage());
+            } catch (NullPointerException ignored) {}
         });
 
         mapView.initialize();
