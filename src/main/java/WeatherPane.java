@@ -18,7 +18,7 @@ public class WeatherPane {
     private TableColumn dateColumn = new TableColumn("Date");
     private TableColumn sourceColumn = new TableColumn("Source");
     private TableColumn windDirectionColumn = new TableColumn("Wind direction");
-    private TableColumn windStrengthColumn = new TableColumn("Wind strength");
+    private TableColumn windStrengthColumn = new TableColumn("Wind windStrength");
     private TableColumn visibilityRangeColumn = new TableColumn("Visibility range");
     private Accordion tableLeftPanel = new Accordion();
     private TitledPane tableContentTitle = new TitledPane();
@@ -142,7 +142,7 @@ public class WeatherPane {
     private Node generateNewRowForm(@NotNull Consumer<Supplier<ErrorOr<WeatherRecord>>> newRowSupplierConsumer) {
         Label dateLabel = new Label("Date/time");
         Label sourceLabel = new Label("Source");
-        Label windLabel = new Label("Wind strength");
+        Label windLabel = new Label("Wind windStrength");
         Label visibilityRangeLabel = new Label("Visibility range");
         VBox labels = new VBox(dateLabel, sourceLabel, windLabel, visibilityRangeLabel);
         labels.setSpacing(15.0);

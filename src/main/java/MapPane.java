@@ -4,7 +4,6 @@ import com.sothawo.mapjfx.event.MarkerEvent;
 import com.sothawo.mapjfx.offline.OfflineCache;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.value.ChangeListener;
-import javafx.event.Event;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
@@ -17,6 +16,7 @@ import javafx.scene.image.ImageView;
 import javafx.scene.image.WritableImage;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
+import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.StackPane;
@@ -79,13 +79,15 @@ public class MapPane {
 
     private ImageModeScene imageModeScene;
 
-    MapLabel heyLable = new MapLabel("hey");
+    MapLabel heyLable = new MapLabel("hey", 7, 7);
 
     public MapPane(@NotNull Stage stage, @NotNull JournalPane journalPane, @NotNull WeatherPane weatherPane) {
         imageModeScene = new ImageModeScene(x -> {
             imageModeButton.setDisable(false);
             return null;
         });
+
+        mapView.addEventHandler(MouseEvent.MOUSE_EXITED, mouseEvent -> heyLable.setVisible(false));
 
         final OfflineCache offlineCache = mapView.getOfflineCache();
         final String cacheDir = "seamap-cache";
@@ -147,7 +149,7 @@ public class MapPane {
         });
         showAll.setSelected(true);
 
-        CheckBoxTreeItem<String> visibilityControlsRootItem = new CheckBoxTreeItem<>("Content visibility");
+        CheckBoxTreeItem<String> visibilityControlsRootItem = new CheckBoxTreeItem<>("Content visibilityRange");
         visibilityControlsRootItem.setExpanded(true);
         visibilityControlsTree.setRoot(visibilityControlsRootItem);
         visibilityControlsTree.setShowRoot(true);
@@ -464,16 +466,16 @@ public class MapPane {
             builder.append(System.lineSeparator());
         }
 
-        if (weatherData.strength != null) {
-            builder.append("Wind strength: ");
-            builder.append(weatherData.strength);
+        if (weatherData.windStrength != null) {
+            builder.append("Wind windStrength: ");
+            builder.append(weatherData.windStrength);
             builder.append(System.lineSeparator());
         }
 
 
-        if (weatherData.visibility != null) {
+        if (weatherData.visibilityRange != null) {
             builder.append("Visibility range: ");
-            builder.append(weatherData.visibility);
+            builder.append(weatherData.visibilityRange);
             builder.append(System.lineSeparator());
         }
         return builder.toString();

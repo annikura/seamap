@@ -85,10 +85,10 @@ public class WeatherRecord {
             try {
                 windStrengthd = Double.parseDouble(windStrength);
             } catch (NumberFormatException e) {
-                return ErrorOr.createErr("Wind strength is expected to be a float number.");
+                return ErrorOr.createErr("Wind windStrength is expected to be a float number.");
             }
             if (windStrengthd < 0) {
-                return ErrorOr.createErr("Wind strength is expected to be a positive number.");
+                return ErrorOr.createErr("Wind windStrength is expected to be a positive number.");
             }
             weatherRecord.windStrength = windStrengthd;
         } else {
