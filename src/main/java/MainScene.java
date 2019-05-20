@@ -15,6 +15,7 @@ public class MainScene {
     final private MapPane mapPane;
 
     public MainScene(final @NotNull Stage stage) {
+        mainPane.setTabClosingPolicy(TabPane.TabClosingPolicy.UNAVAILABLE);
 
         journalTap.setContent(journalPane.getTablePane());
         weatherTap.setContent(weatherPane.getTablePane());

@@ -3,6 +3,8 @@ import com.sothawo.mapjfx.event.MapViewEvent;
 import com.sothawo.mapjfx.event.MarkerEvent;
 import com.sothawo.mapjfx.offline.OfflineCache;
 import javafx.beans.property.BooleanProperty;
+import javafx.beans.value.ChangeListener;
+import javafx.event.Event;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
@@ -24,14 +26,11 @@ import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.stage.Stage;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class MapPane {
@@ -48,6 +47,7 @@ public class MapPane {
     private RadioButton showOnlyPaths = new RadioButton("Show paths only");
     private RadioButton customMode = new RadioButton("Custom mode");
     private CheckBox showSquaresCheckBox = new CheckBox("Show relevant marinequadrates");
+    private CheckBox showLabelsCheckBox = new CheckBox("Show relevant time marks");
     private Button imageModeButton = new Button("Open image mode");
 
     private VBox contentSettingsPaneBox = new VBox();
@@ -79,6 +79,7 @@ public class MapPane {
 
     private ImageModeScene imageModeScene;
 
+    MapLabel heyLable = new MapLabel("hey");
 
     public MapPane(@NotNull Stage stage, @NotNull JournalPane journalPane, @NotNull WeatherPane weatherPane) {
         imageModeScene = new ImageModeScene(x -> {
@@ -89,18 +90,22 @@ public class MapPane {
         final OfflineCache offlineCache = mapView.getOfflineCache();
         final String cacheDir = "seamap-cache";
 
+        mapView.setCustomMapviewCssURL(getClass().getResource("/custom_mapview.css"));
+
         mapView.initializedProperty().addListener((observableValue, aBoolean, t1) -> {
             mapView.setCenter(new Coordinate(10.0, 10.0));
             mapView.setMapType(MapType.OSM);
             mapView.addEventHandler(MarkerEvent.MARKER_CLICKED, event -> {
+                // TODO: validate that marker has such data
                 MarkerData markerData = markerMapping.get(event.getMarker().getId());
                 generalInfoContent.setText(generateGeneralReport(markerData));
-                if (markerData.comment != null && !markerData.comment.isEmpty())
-                    generalInfoContent.setText(generalInfoContent.getText() + "Comment: " + markerData.comment + "\n");
                 mapPane.setRight(helpBox);
             });
-            // loadMapData(getClass().getResource("data.json").getPath());
             mapView.setZoom(5);
+
+            heyLable.setPosition(new Coordinate(1.0, 1.0));
+            mapView.addLabel(heyLable);
+
 
             try {
                 Files.createDirectories(Paths.get(cacheDir));
@@ -172,6 +177,7 @@ public class MapPane {
                 showAll, showOnlyMarkers, showOnlyPaths, customMode,
                 visibilityControlsTree,
                 showSquaresCheckBox,
+                showLabelsCheckBox,
                 imageModeButton,
                 loadFromTableButton);
 
@@ -233,6 +239,17 @@ public class MapPane {
         statusBar.setAlignment(Pos.CENTER);
         mapView.addEventHandler(MapViewEvent.MAP_POINTER_MOVED, event -> currentCoordinatesValueLabel.setText(
                 String.format("%.10f, %.10f", event.getCoordinate().getLatitude(), event.getCoordinate().getLongitude())));
+        heyLable.setPosition(new Coordinate(1.0, 1.0));
+
+        mapView.addEventHandler(MapViewEvent.MAP_POINTER_MOVED, mapViewEvent -> {
+            heyLable.setVisible(true);
+            heyLable.setPosition(new Coordinate(mapViewEvent.getCoordinate().getLatitude(), mapViewEvent.getCoordinate().getLongitude()));
+        });
+
+        mapView.addEventHandler(MapViewEvent.MAP_EXTENT, event -> {
+            event.consume();
+            mapView.setExtent(event.getExtent());
+        });
         statusBar.getChildren().addAll(currentCoordinatesLabel, currentCoordinatesValueLabel);
 
         mapViewStack.getChildren().addAll(mapView);
@@ -264,6 +281,7 @@ public class MapPane {
             shipMapElement.deleteShipElements(mapView);
         }
         shipMapElements.clear();
+
         mapPane.setRight(null);
         showAll.setSelected(true);
     }
@@ -283,10 +301,7 @@ public class MapPane {
             shipRoutesCheckBoxItem.setSelected(!showOnlyMarkers.isSelected());
             shipElements.setMarkersState(!showOnlyPaths.isSelected());
             shipElements.setPathState(!showOnlyMarkers.isSelected());
-
-            shipElements.bindMarkersWith(dataPointsCheckBoxItem.selectedProperty());
-            shipElements.bindPathWith(shipRoutesCheckBoxItem.selectedProperty());
-            shipElements.bindSquaresWith(dataPointsCheckBoxItem.selectedProperty(), shipRoutesCheckBoxItem.selectedProperty());
+            shipElements.setup(dataPointsCheckBoxItem.selectedProperty(), shipRoutesCheckBoxItem.selectedProperty());
 
             visibilityControlsTree.getRoot().getChildren().add(shipCheckBoxItem);
             shipElements.showShipElements(mapView);
@@ -296,6 +311,7 @@ public class MapPane {
 
     private class ShipMapElements {
         private final ArrayList<Marker> markers = new ArrayList<>();
+        private final ArrayList<MapLabel> labels = new ArrayList<>();
         private final CoordinateLine path;
         private final HashMap<String, CoordinateLine> marinequadrates = new HashMap<>();
 
@@ -306,6 +322,12 @@ public class MapPane {
                 Marker newMarker = new Marker(getClass().getResource(color + ".png"), -12, -12)
                         .setPosition(newCoordinate);
                 coordinates.add(newCoordinate);
+
+                // TODO: add single date property
+                MapLabel newMarkerLabel = new MapLabel(marker.date.substring(marker.date.length() - 5), 12, 12)
+                        .setPosition(newCoordinate)
+                        .setCssClass("map-label");
+                labels.add(newMarkerLabel);
 
                 if (marker.square != null) {
                     CoordinateLine newSquare = new CoordinateLine(marker.square.stream()
@@ -323,6 +345,7 @@ public class MapPane {
             markers.forEach(mapView::addMarker);
             mapView.addCoordinateLine(path);
             marinequadrates.values().forEach(mapView::addCoordinateLine);
+            labels.forEach(mapView::addLabel);
         }
 
         private void deleteShipElements(final @NotNull MapView mapView) {
@@ -330,6 +353,20 @@ public class MapPane {
             markers.forEach(marker -> markerMapping.remove(marker.getId()));
             mapView.removeCoordinateLine(path);
             marinequadrates.values().forEach(mapView::removeCoordinateLine);
+            labels.forEach(mapView::removeLabel);
+        }
+
+        void setup(final @NotNull BooleanProperty markersVisibility,
+                   final @NotNull BooleanProperty pathVisibility) {
+            markers.forEach(marker -> markersVisibility.bindBidirectional(marker.visibleProperty()));
+            pathVisibility.bindBidirectional(path.visibleProperty());
+
+            bindCheckBoxProperty(labels, markersVisibility, pathVisibility, showLabelsCheckBox);
+            bindCheckBoxProperty(marinequadrates.values(), markersVisibility, pathVisibility, showSquaresCheckBox);
+
+            setLabelsState(markersVisibility, pathVisibility);
+            setSquaresState(markersVisibility, pathVisibility);
+
         }
 
         private void setMarkersState(boolean visible) {
@@ -340,31 +377,33 @@ public class MapPane {
             path.setVisible(visible);
         }
 
-        private void bindMarkersWith(final @NotNull BooleanProperty bindingProperty) {
-            markers.forEach(marker -> bindingProperty.bindBidirectional(marker.visibleProperty()));
+        private <T extends MapElement> void bindCheckBoxProperty(final @NotNull Collection<T> property,
+                                                                 final @NotNull BooleanProperty markersVisibility,
+                                                                 final @NotNull BooleanProperty pathVisibility,
+                                                                 final @NotNull CheckBox propertyCheckBox) {
+            ChangeListener<Boolean> booleanChangeListener = (observableValue, wasSelected, isSelected) ->
+                    setCheckBoxPropertyState(property, markersVisibility, pathVisibility, propertyCheckBox);
+            markersVisibility.addListener(booleanChangeListener);
+            pathVisibility.addListener(booleanChangeListener);
+            propertyCheckBox.selectedProperty().addListener(booleanChangeListener);
         }
 
-        private void bindPathWith(final @NotNull BooleanProperty bindingProperty) {
-            bindingProperty.bindBidirectional(path.visibleProperty());
-        }
-
-        private void bindSquaresWith(final @NotNull BooleanProperty markersVisibility,
+        private void setSquaresState(final @NotNull BooleanProperty markersVisibility,
                                      final @NotNull BooleanProperty pathVisibility) {
-            markersVisibility.addListener((observableValue, wasSelected, isSelected) ->
-                    marinequadrates
-                            .values()
-                            .forEach(line -> line.setVisible(
-                                    (markersVisibility.get() || pathVisibility.get()) && showSquaresCheckBox.isSelected())));
-            pathVisibility.addListener((observableValue, wasSelected, isSelected) ->
-                    marinequadrates
-                            .values()
-                            .forEach(line -> line.setVisible(
-                                    (markersVisibility.get() || pathVisibility.get()) && showSquaresCheckBox.isSelected())));
-            showSquaresCheckBox.selectedProperty().addListener((observableValue, oldValue, newValue) ->
-                    marinequadrates
-                            .values()
-                            .forEach(line -> line.setVisible(
-                                    (markersVisibility.get() || pathVisibility.get()) && showSquaresCheckBox.isSelected())));
+            setCheckBoxPropertyState(marinequadrates.values(), markersVisibility, pathVisibility, showSquaresCheckBox);
+        }
+
+        private void setLabelsState(final @NotNull BooleanProperty markersVisibility,
+                                     final @NotNull BooleanProperty pathVisibility) {
+            setCheckBoxPropertyState(labels, markersVisibility, pathVisibility, showSquaresCheckBox);
+        }
+
+        private <T extends MapElement> void setCheckBoxPropertyState(final @NotNull Collection<T> property,
+                                                                     final @NotNull BooleanProperty markersVisibility,
+                                                                     final @NotNull BooleanProperty pathVisibility,
+                                                                     final @NotNull CheckBox propertyCheckBox) {
+            property.forEach(line -> line.setVisible(
+                    (markersVisibility.get() || pathVisibility.get()) && propertyCheckBox.isSelected()));
         }
     }
 
@@ -391,6 +430,12 @@ public class MapPane {
         if (!markerData.originalCoordinates.equals("")) {
             builder.append("Original coordinates: ");
             builder.append(markerData.originalCoordinates);
+            builder.append(System.lineSeparator());
+        }
+
+        if (markerData.comment != null && !markerData.comment.isEmpty()) {
+            builder.append("Comment: ");
+            builder.append(markerData.comment);
             builder.append(System.lineSeparator());
         }
 

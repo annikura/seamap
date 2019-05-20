@@ -8,12 +8,11 @@ public class Main extends Application {
         launch(args);
     }
 
-    public void start(Stage stage) throws Exception {
+    public void start(Stage stage) {
         StackPane root = new StackPane();
 
         Scene scene = new Scene(root, 1500, 1000);
         stage.setScene(scene);
-        stage.setFullScreen(true);
         root.getChildren().add(new MainScene(stage).getMainPane());
 
         stage.show();
