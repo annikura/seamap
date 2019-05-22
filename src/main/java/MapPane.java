@@ -48,6 +48,7 @@ public class MapPane {
     private RadioButton customMode = new RadioButton("Custom mode");
     private CheckBox showSquaresCheckBox = new CheckBox("Show relevant marinequadrates");
     private CheckBox showLabelsCheckBox = new CheckBox("Show relevant time marks");
+    private CheckBox showWindDirectionsCheckBox = new CheckBox("Show relevant wind directions");
     private Button imageModeButton = new Button("Open image mode");
 
     private VBox contentSettingsPaneBox = new VBox();
@@ -181,6 +182,7 @@ public class MapPane {
                 visibilityControlsTree,
                 showSquaresCheckBox,
                 showLabelsCheckBox,
+                showWindDirectionsCheckBox,
                 imageModeButton,
                 loadFromTableButton);
 
@@ -248,9 +250,7 @@ public class MapPane {
             if (tipLabelHolder.getValue() != null) {
                 mapView.removeLabel(tipLabelHolder.getValue());
             }
-            CoordinateData newCoordinate = new CoordinateData(
-                    mapViewEvent.getCoordinate().getLatitude(),
-                    mapViewEvent.getCoordinate().getLongitude());
+            CoordinateData newCoordinate = Utils.coordinateToCoordinateData(mapViewEvent.getCoordinate());
             ShipData nearestShip = null;
             Double bestDistance = null;
 
@@ -271,7 +271,7 @@ public class MapPane {
             }
             MapLabel newMapLabel = new MapLabel(coordinateApproximation.date.substring(11), 12, 12).setCssClass("map-label");
             tipLabelHolder.setValue(newMapLabel);
-            newMapLabel.setPosition(new Coordinate(newCoordinate.getLat(), newCoordinate.getLng()));
+            newMapLabel.setPosition(Utils.coordinateDataToCoordinate(newCoordinate));
             mapView.addLabel(newMapLabel);
             newMapLabel.setVisible(true);
         });
@@ -342,6 +342,7 @@ public class MapPane {
 
     private class ShipMapElements {
         private final ArrayList<Marker> markers = new ArrayList<>();
+        private final ArrayList<CoordinateLine> windDirections = new ArrayList<>();
         private final ArrayList<MapLabel> labels = new ArrayList<>();
         private final CoordinateLine path;
         private final HashMap<String, CoordinateLine> marinequadrates = new HashMap<>();
@@ -349,7 +350,7 @@ public class MapPane {
         private ShipMapElements(final @NotNull List<MarkerData> markerData, @NotNull String color) {
             ArrayList<Coordinate> coordinates = new ArrayList<>();
             markerData.forEach(marker -> {
-                Coordinate newCoordinate = new Coordinate(marker.coordinate.getLat(), marker.coordinate.getLng());
+                Coordinate newCoordinate = Utils.coordinateDataToCoordinate(marker.coordinate);
                 Marker newMarker = new Marker(getClass().getResource(color + ".png"), -12, -12)
                         .setPosition(newCoordinate);
                 coordinates.add(newCoordinate);
@@ -359,6 +360,13 @@ public class MapPane {
                         .setPosition(newCoordinate)
                         .setCssClass("map-label");
                 labels.add(newMarkerLabel);
+
+                if (marker.weatherData != null) {
+                    CoordinateData windDirection = marker.weatherData.getWindDirectionVector();
+                    windDirections.add(new CoordinateLine(
+                            Utils.coordinateDataToCoordinate(marker.coordinate),
+                            Utils.coordinateDataToCoordinate(marker.coordinate.plus(windDirection))).setColor(Color.AQUA));
+                }
 
                 if (marker.square != null) {
                     CoordinateLine newSquare = new CoordinateLine(marker.square.stream()
@@ -375,6 +383,7 @@ public class MapPane {
         private void showShipElements(final @NotNull MapView mapView) {
             markers.forEach(mapView::addMarker);
             mapView.addCoordinateLine(path);
+            windDirections.forEach(mapView::addCoordinateLine);
             marinequadrates.values().forEach(mapView::addCoordinateLine);
             labels.forEach(mapView::addLabel);
         }
@@ -383,6 +392,7 @@ public class MapPane {
             markers.forEach(mapView::removeMarker);
             markers.forEach(marker -> markerMapping.remove(marker.getId()));
             mapView.removeCoordinateLine(path);
+            windDirections.forEach(mapView::addCoordinateLine);
             marinequadrates.values().forEach(mapView::removeCoordinateLine);
             labels.forEach(mapView::removeLabel);
         }
@@ -394,10 +404,11 @@ public class MapPane {
 
             bindCheckBoxProperty(labels, markersVisibility, pathVisibility, showLabelsCheckBox);
             bindCheckBoxProperty(marinequadrates.values(), markersVisibility, pathVisibility, showSquaresCheckBox);
+            bindCheckBoxProperty(windDirections, markersVisibility, pathVisibility, showWindDirectionsCheckBox);
 
             setLabelsState(markersVisibility, pathVisibility);
             setSquaresState(markersVisibility, pathVisibility);
-
+            setWindDirectionsState(markersVisibility, pathVisibility);
         }
 
         private void setMarkersState(boolean visible) {
@@ -406,6 +417,10 @@ public class MapPane {
 
         private void setPathState(boolean visible) {
             path.setVisible(visible);
+        }
+
+        private void setWindDirectionsState(boolean visible) {
+            windDirections.forEach(windDirection -> windDirection.setVisible(visible));
         }
 
         private <T extends MapElement> void bindCheckBoxProperty(final @NotNull Collection<T> property,
@@ -427,6 +442,11 @@ public class MapPane {
         private void setLabelsState(final @NotNull BooleanProperty markersVisibility,
                                      final @NotNull BooleanProperty pathVisibility) {
             setCheckBoxPropertyState(labels, markersVisibility, pathVisibility, showSquaresCheckBox);
+        }
+
+        private void setWindDirectionsState(final @NotNull BooleanProperty markersVisibility,
+                                            final @NotNull BooleanProperty pathVisibility) {
+            setCheckBoxPropertyState(windDirections, markersVisibility, pathVisibility, showWindDirectionsCheckBox);
         }
 
         private <T extends MapElement> void setCheckBoxPropertyState(final @NotNull Collection<T> property,

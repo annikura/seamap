@@ -22,4 +22,14 @@ public class CoordinateData {
     public double distanceTo(final @NotNull CoordinateData other) {
         return Math.sqrt((lat - other.lat) * (lat - other.lat) + (lng - other.lng) * (lng - other.lng));
     }
+
+    public CoordinateData plus(final @NotNull CoordinateData other) {
+        return new CoordinateData(lat + other.getLat(), lng + other.getLng());
+    }
+
+    public CoordinateData turn(double degree) {
+        return new CoordinateData(
+                Math.cos(degree * lat) - Math.sin(degree * lng),
+                Math.sin(degree * lat) + Math.cos(degree * lng));
+    }
 }

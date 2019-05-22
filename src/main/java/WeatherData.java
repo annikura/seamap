@@ -1,6 +1,7 @@
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 
 public class WeatherData {
     String source;
@@ -8,11 +9,19 @@ public class WeatherData {
     String windDirection;
     Double visibilityRange;
 
+    public CoordinateData getWindDirectionVector() {
+        int position = WeatherRecord.possibleDirections.indexOf(windDirection);
+        if (position < 0 || position > WeatherRecord.possibleDirections.size()) {
+            return null;
+        }
+        return new CoordinateData(1, 0).turn(30 * position);
+    }
+
     public static WeatherData avg(final @NotNull WeatherData... weatherData) {
         WeatherData avgRecord = new WeatherData();
         avgRecord.visibilityRange = 0.0;
         avgRecord.windStrength = 0.0;
-        ArrayList<String> windDirections = new ArrayList<>();
+        HashSet<String> windDirections = new HashSet<>();
         ArrayList<String> sources = new ArrayList<>();
 
         int visibilityOptions = 0;
