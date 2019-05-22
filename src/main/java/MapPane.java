@@ -79,15 +79,15 @@ public class MapPane {
 
     private ImageModeScene imageModeScene;
 
-    MapLabel heyLable = new MapLabel("hey", 7, 7);
+    private Holder<MapLabel> tipLabelHolder = new Holder<>();
+
+    private MapData displayedData = new MapData();
 
     public MapPane(@NotNull Stage stage, @NotNull JournalPane journalPane, @NotNull WeatherPane weatherPane) {
         imageModeScene = new ImageModeScene(x -> {
             imageModeButton.setDisable(false);
             return null;
         });
-
-        mapView.addEventHandler(MouseEvent.MOUSE_EXITED, mouseEvent -> heyLable.setVisible(false));
 
         final OfflineCache offlineCache = mapView.getOfflineCache();
         final String cacheDir = "seamap-cache";
@@ -104,10 +104,11 @@ public class MapPane {
                 mapPane.setRight(helpBox);
             });
             mapView.setZoom(5);
-
-            heyLable.setPosition(new Coordinate(1.0, 1.0));
-            mapView.addLabel(heyLable);
-
+            mapView.addEventHandler(MouseEvent.MOUSE_EXITED, mouseEvent -> {
+                if (tipLabelHolder.getValue() != null) {
+                    tipLabelHolder.getValue().setVisible(false);
+                }
+            });
 
             try {
                 Files.createDirectories(Paths.get(cacheDir));
@@ -239,13 +240,40 @@ public class MapPane {
 
         statusBar.setSpacing(10);
         statusBar.setAlignment(Pos.CENTER);
+
         mapView.addEventHandler(MapViewEvent.MAP_POINTER_MOVED, event -> currentCoordinatesValueLabel.setText(
                 String.format("%.10f, %.10f", event.getCoordinate().getLatitude(), event.getCoordinate().getLongitude())));
-        heyLable.setPosition(new Coordinate(1.0, 1.0));
 
         mapView.addEventHandler(MapViewEvent.MAP_POINTER_MOVED, mapViewEvent -> {
-            heyLable.setVisible(true);
-            heyLable.setPosition(new Coordinate(mapViewEvent.getCoordinate().getLatitude(), mapViewEvent.getCoordinate().getLongitude()));
+            if (tipLabelHolder.getValue() != null) {
+                mapView.removeLabel(tipLabelHolder.getValue());
+            }
+            CoordinateData newCoordinate = new CoordinateData(
+                    mapViewEvent.getCoordinate().getLatitude(),
+                    mapViewEvent.getCoordinate().getLongitude());
+            ShipData nearestShip = null;
+            Double bestDistance = null;
+
+            for (ShipData ship : displayedData.ships) {
+                double newDistance = ship.distanceToShip(newCoordinate);
+                if (newDistance < CoordinateData.EPS * Math.pow(2.0, 8 - mapView.getZoom()) && (bestDistance == null || newDistance < bestDistance)) {
+                    nearestShip = ship;
+                    bestDistance = newDistance;
+                }
+            }
+            if (nearestShip == null) {
+                return;
+            }
+            MarkerData coordinateApproximation = nearestShip.approximateInnerPathCoordinate(newCoordinate);
+            if (coordinateApproximation == null) {
+                System.out.println(nearestShip);
+                return;
+            }
+            MapLabel newMapLabel = new MapLabel(coordinateApproximation.date.substring(11), 12, 12).setCssClass("map-label");
+            tipLabelHolder.setValue(newMapLabel);
+            newMapLabel.setPosition(new Coordinate(newCoordinate.getLat(), newCoordinate.getLng()));
+            mapView.addLabel(newMapLabel);
+            newMapLabel.setVisible(true);
         });
 
         mapView.addEventHandler(MapViewEvent.MAP_EXTENT, event -> {
@@ -261,7 +289,8 @@ public class MapPane {
 
         loadFromTableButton.setOnAction(e -> {
             clearOldData();
-            loadMapData(RecordsProcesser.processRecords(journalPane.getRecords(), weatherPane.getRecords()));
+            displayedData = RecordsProcesser.processRecords(journalPane.getRecords(), weatherPane.getRecords());
+            loadMapData(displayedData);
         });
 
         stage.getScene().addEventHandler(KeyEvent.KEY_PRESSED, t -> {
@@ -320,7 +349,7 @@ public class MapPane {
         private ShipMapElements(final @NotNull List<MarkerData> markerData, @NotNull String color) {
             ArrayList<Coordinate> coordinates = new ArrayList<>();
             markerData.forEach(marker -> {
-                Coordinate newCoordinate = new Coordinate(marker.coordinate.lat, marker.coordinate.lng);
+                Coordinate newCoordinate = new Coordinate(marker.coordinate.getLat(), marker.coordinate.getLng());
                 Marker newMarker = new Marker(getClass().getResource(color + ".png"), -12, -12)
                         .setPosition(newCoordinate);
                 coordinates.add(newCoordinate);
@@ -333,7 +362,7 @@ public class MapPane {
 
                 if (marker.square != null) {
                     CoordinateLine newSquare = new CoordinateLine(marker.square.stream()
-                            .map(coordinateData -> new Coordinate(coordinateData.lat, coordinateData.lng))
+                            .map(coordinateData -> new Coordinate(coordinateData.getLat(), coordinateData.getLng()))
                             .collect(Collectors.toList()));
                     marinequadrates.put(newMarker.getId(), newSquare);
                 }
@@ -422,11 +451,11 @@ public class MapPane {
         builder.append(System.lineSeparator());
         builder.append("\t");
         builder.append("lat: ");
-        builder.append(markerData.coordinate.lat);
+        builder.append(markerData.coordinate.getLat());
         builder.append(System.lineSeparator());
         builder.append("\t");
         builder.append("lng: ");
-        builder.append(markerData.coordinate.lng);
+        builder.append(markerData.coordinate.getLng());
         builder.append(System.lineSeparator());
 
         if (!markerData.originalCoordinates.equals("")) {

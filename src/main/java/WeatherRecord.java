@@ -2,13 +2,16 @@ import org.jetbrains.annotations.NotNull;
 
 import java.text.ParsePosition;
 import java.text.SimpleDateFormat;
+import java.util.Arrays;
 import java.util.Date;
+import java.util.List;
+import java.util.stream.Collectors;
 
 public class WeatherRecord {
-    final static String[] possibleDirections = new String[]{"N", "NNE", "NE", "ENE",
+    final static List<String> possibleDirections = Arrays.stream(new String[]{"N", "NNE", "NE", "ENE",
             "E", "ESE", "SE", "SSE",
             "S", "SSW", "SW", "WSW",
-            "W", "WNW", "NW", "NNW"};
+            "W", "WNW", "NW", "NNW"}).collect(Collectors.toList());
 
     String date;
     String source;
