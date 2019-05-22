@@ -74,6 +74,7 @@ public class MapPane {
     private TextArea generalInfoContent = new TextArea();
 
     private TreeView<String> visibilityControlsTree = new TreeView<>();
+    private Map<String, CheckBoxTreeItem<String>> shipVisibilityControls = new HashMap<>();
 
     private ArrayList<MapPane.ShipMapElements> shipMapElements = new ArrayList<>();
     private HashMap<String, MarkerData> markerMapping = new HashMap<>();
@@ -255,16 +256,18 @@ public class MapPane {
             Double bestDistance = null;
 
             for (ShipData ship : displayedData.ships) {
-                double newDistance = ship.distanceToShip(newCoordinate);
-                if (newDistance < CoordinateData.EPS * Math.pow(2.0, 8 - mapView.getZoom()) && (bestDistance == null || newDistance < bestDistance)) {
-                    nearestShip = ship;
-                    bestDistance = newDistance;
+                if (shipVisibilityControls.get(ship.shipName).isSelected() || shipVisibilityControls.get(ship.shipName).isIndeterminate()) {
+                    double newDistance = ship.distanceToShip(newCoordinate);
+                    if (newDistance < CoordinateData.EPS * Math.pow(2.0, 8 - mapView.getZoom()) && (bestDistance == null || newDistance < bestDistance)) {
+                        nearestShip = ship;
+                        bestDistance = newDistance;
+                    }
                 }
             }
             if (nearestShip == null) {
                 return;
             }
-            MarkerData coordinateApproximation = nearestShip.approximateInnerPathCoordinate(newCoordinate);
+            MarkerData coordinateApproximation = nearestShip.projectCoordinateOnPath(newCoordinate);
             if (coordinateApproximation == null) {
                 System.out.println(nearestShip);
                 return;
@@ -308,6 +311,7 @@ public class MapPane {
 
     void clearOldData() {
         visibilityControlsTree.getRoot().getChildren().clear();
+        shipVisibilityControls.clear();
         for (MapPane.ShipMapElements shipMapElement : shipMapElements) {
             shipMapElement.deleteShipElements(mapView);
         }
@@ -323,6 +327,7 @@ public class MapPane {
         for (ShipData ship : mapData.ships) {
             final ShipMapElements shipElements = new ShipMapElements(ship.markers, ship.color);
             final CheckBoxTreeItem<String> shipCheckBoxItem = new CheckBoxTreeItem<>(ship.shipName + " (" + ship.color + ")");
+            shipVisibilityControls.put(ship.shipName, shipCheckBoxItem);
             final CheckBoxTreeItem<String> dataPointsCheckBoxItem = new CheckBoxTreeItem<>("Data points visible");
             final CheckBoxTreeItem<String> shipRoutesCheckBoxItem = new CheckBoxTreeItem<>("Path visible");
             shipCheckBoxItem.getChildren().add(dataPointsCheckBoxItem);
@@ -363,9 +368,11 @@ public class MapPane {
 
                 if (marker.weatherData != null) {
                     CoordinateData windDirection = marker.weatherData.getWindDirectionVector();
+                    if (windDirection != null) {
                     windDirections.add(new CoordinateLine(
                             Utils.coordinateDataToCoordinate(marker.coordinate),
-                            Utils.coordinateDataToCoordinate(marker.coordinate.plus(windDirection))).setColor(Color.AQUA));
+                            Utils.coordinateDataToCoordinate(marker.coordinate.plus(windDirection.mul(0.2)))).setColor(Color.AQUA));
+                    }
                 }
 
                 if (marker.square != null) {
@@ -417,10 +424,6 @@ public class MapPane {
 
         private void setPathState(boolean visible) {
             path.setVisible(visible);
-        }
-
-        private void setWindDirectionsState(boolean visible) {
-            windDirections.forEach(windDirection -> windDirection.setVisible(visible));
         }
 
         private <T extends MapElement> void bindCheckBoxProperty(final @NotNull Collection<T> property,

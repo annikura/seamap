@@ -27,6 +27,14 @@ public class CoordinateData {
         return new CoordinateData(lat + other.getLat(), lng + other.getLng());
     }
 
+    public CoordinateData minus(final @NotNull CoordinateData other) {
+        return new CoordinateData(lat - other.getLat(), lng - other.getLng());
+    }
+
+    public CoordinateData mul(double x) {
+        return new CoordinateData(lat * x, lng * x);
+    }
+
     public CoordinateData turn(double degree) {
         return new CoordinateData(
                 Math.cos(degree * lat) - Math.sin(degree * lng),
