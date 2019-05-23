@@ -1,3 +1,5 @@
+package ru.annikura.seamap.panes;
+
 import javafx.scene.Node;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
@@ -7,6 +9,9 @@ import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import org.jetbrains.annotations.NotNull;
+import ru.annikura.seamap.journal.DataLoader;
+import ru.annikura.seamap.journal.WeatherRecord;
+import ru.annikura.seamap.utils.ErrorOr;
 
 import java.io.File;
 import java.util.List;

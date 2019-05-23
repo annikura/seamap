@@ -1,13 +1,16 @@
+package ru.annikura.seamap.data;
+
 import org.jetbrains.annotations.NotNull;
+import ru.annikura.seamap.journal.WeatherRecord;
 
 import java.util.ArrayList;
 import java.util.HashSet;
 
 public class WeatherData {
-    String source;
-    Double windStrength;
-    String windDirection;
-    Double visibilityRange;
+    public String source;
+    public Double windStrength;
+    public String windDirection;
+    public Double visibilityRange;
 
     public CoordinateData getWindDirectionVector() {
         int position = WeatherRecord.possibleDirections.indexOf(windDirection);

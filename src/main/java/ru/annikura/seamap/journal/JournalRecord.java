@@ -1,4 +1,8 @@
+package ru.annikura.seamap.journal;
+
 import org.jetbrains.annotations.NotNull;
+import ru.annikura.seamap.utils.ErrorOr;
+import ru.annikura.seamap.data.CoordinateData;
 
 import java.io.File;
 import java.text.ParsePosition;

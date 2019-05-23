@@ -1,3 +1,5 @@
+package ru.annikura.seamap.utils;
+
 public class ErrorOr<T> {
     final private T obj;
     final private String err;

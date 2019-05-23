@@ -1,5 +1,8 @@
+package ru.annikura.seamap.utils;
+
 import com.sothawo.mapjfx.Coordinate;
 import org.jetbrains.annotations.NotNull;
+import ru.annikura.seamap.data.CoordinateData;
 
 public class Utils {
     public static Coordinate coordinateDataToCoordinate(final @NotNull CoordinateData cordinate) {

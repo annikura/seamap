@@ -1,6 +1,9 @@
+package ru.annikura.seamap.journal;
+
 import com.opencsv.CSVReader;
 import com.opencsv.CSVWriter;
 import org.jetbrains.annotations.NotNull;
+import ru.annikura.seamap.utils.ErrorOr;
 
 import java.io.FileReader;
 import java.io.FileWriter;

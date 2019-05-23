@@ -1,4 +1,7 @@
+package ru.annikura.seamap.journal;
+
 import org.jetbrains.annotations.NotNull;
+import ru.annikura.seamap.data.*;
 
 import java.util.*;
 import java.util.stream.Collectors;

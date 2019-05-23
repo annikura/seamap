@@ -1,3 +1,5 @@
+package ru.annikura.seamap.data;
+
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -7,11 +9,11 @@ import java.util.Date;
 import java.util.List;
 
 public class ShipData {
-    String color;
-    String shipName;
-    List<MarkerData> markers;
+    public String color;
+    public String shipName;
+    public List<MarkerData> markers;
 
-    @Nullable MarkerData projectCoordinateOnPath(final @NotNull CoordinateData coordinate) {
+    public @Nullable MarkerData projectCoordinateOnPath(final @NotNull CoordinateData coordinate) {
         int closestSegment = findClosestSegment(coordinate);
         if (closestSegment + 1 >= markers.size() ||
                 !pointIsInner(

@@ -1,3 +1,5 @@
+package ru.annikura.seamap.data;
+
 import org.jetbrains.annotations.NotNull;
 
 public class CoordinateData {

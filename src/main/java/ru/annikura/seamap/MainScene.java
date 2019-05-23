@@ -1,8 +1,13 @@
+package ru.annikura.seamap;
+
 import javafx.scene.Node;
 import javafx.scene.control.Tab;
 import javafx.scene.control.TabPane;
 import javafx.stage.Stage;
 import org.jetbrains.annotations.NotNull;
+import ru.annikura.seamap.panes.JournalPane;
+import ru.annikura.seamap.panes.MapPane;
+import ru.annikura.seamap.panes.WeatherPane;
 
 public class MainScene {
     final private TabPane mainPane = new TabPane();

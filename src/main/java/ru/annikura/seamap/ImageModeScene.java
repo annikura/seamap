@@ -1,3 +1,5 @@
+package ru.annikura.seamap;
+
 import javafx.embed.swing.SwingFXUtils;
 import javafx.event.Event;
 import javafx.event.EventHandler;

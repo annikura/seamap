@@ -1,3 +1,5 @@
+package ru.annikura.seamap.panes;
+
 import com.sothawo.mapjfx.*;
 import com.sothawo.mapjfx.event.MapViewEvent;
 import com.sothawo.mapjfx.event.MarkerEvent;
@@ -26,6 +28,11 @@ import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.stage.Stage;
 import org.jetbrains.annotations.NotNull;
+import ru.annikura.seamap.ImageModeScene;
+import ru.annikura.seamap.data.*;
+import ru.annikura.seamap.journal.RecordsProcesser;
+import ru.annikura.seamap.utils.Holder;
+import ru.annikura.seamap.utils.Utils;
 
 import java.io.IOException;
 import java.nio.file.Files;

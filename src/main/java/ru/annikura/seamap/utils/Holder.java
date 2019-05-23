@@ -1,3 +1,5 @@
+package ru.annikura.seamap.utils;
+
 public class Holder<T> {
     private volatile T value;
     public Holder() {
