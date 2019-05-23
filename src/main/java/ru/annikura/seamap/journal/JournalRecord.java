@@ -173,7 +173,7 @@ public class JournalRecord {
             String square = mqk.substring(0, 2).toUpperCase();
             File squareFile;
             try {
-                squareFile = new File(journalRecord.getClass().getResource(square).getPath());
+                squareFile = new File(journalRecord.getClass().getResource("/" + square).getPath());
             } catch (NullPointerException e) {
                 return ErrorOr.createErr("Unknown Kriegsmarine Marinequadrat coordinate: " + square);
             }
@@ -188,7 +188,7 @@ public class JournalRecord {
             try {
                 subsquareNumber = subsquare.isEmpty() ? 0 : Integer.parseInt(subsquare);
             } catch (NumberFormatException e) {
-                return ErrorOr.createErr("MQK subsquare coordinate is not a number (or absent).");
+                return ErrorOr.createErr("MQK subsquare coordinate " + subsquare + "is not a number (or absent).");
             }
             if (subsquareNumber < 0 || subsquareNumber > 10000) {
                 return ErrorOr.createErr("MQK subsquare coordinate is out of range 0..9999.");

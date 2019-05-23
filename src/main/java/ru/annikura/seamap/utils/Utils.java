@@ -5,6 +5,8 @@ import org.jetbrains.annotations.NotNull;
 import ru.annikura.seamap.data.CoordinateData;
 
 public class Utils {
+    private Utils() {}
+
     public static Coordinate coordinateDataToCoordinate(final @NotNull CoordinateData cordinate) {
         return new Coordinate(cordinate.getLat(), cordinate.getLng());
     }

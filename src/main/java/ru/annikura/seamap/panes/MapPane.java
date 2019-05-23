@@ -363,7 +363,7 @@ public class MapPane {
             ArrayList<Coordinate> coordinates = new ArrayList<>();
             markerData.forEach(marker -> {
                 Coordinate newCoordinate = Utils.coordinateDataToCoordinate(marker.coordinate);
-                Marker newMarker = new Marker(getClass().getResource(color + ".png"), -12, -12)
+                Marker newMarker = new Marker(getClass().getResource("/" + color + ".png"), -12, -12)
                         .setPosition(newCoordinate);
                 coordinates.add(newCoordinate);
 

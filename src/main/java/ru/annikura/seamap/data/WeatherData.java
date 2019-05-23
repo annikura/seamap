@@ -6,7 +6,7 @@ import ru.annikura.seamap.journal.WeatherRecord;
 import java.util.ArrayList;
 import java.util.HashSet;
 
-public class WeatherData {
+public class    WeatherData {
     public String source;
     public Double windStrength;
     public String windDirection;
@@ -17,7 +17,7 @@ public class WeatherData {
         if (position < 0 || position > WeatherRecord.possibleDirections.size()) {
             return null;
         }
-        return new CoordinateData(1, 0).turn(30 * position);
+        return new CoordinateData(1, 0).turn(22.5 * Math.PI / 180.0 * position);
     }
 
     public static WeatherData avg(final @NotNull WeatherData... weatherData) {
