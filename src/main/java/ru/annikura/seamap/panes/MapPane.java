@@ -34,6 +34,7 @@ import ru.annikura.seamap.journal.RecordsProcesser;
 import ru.annikura.seamap.utils.Holder;
 import ru.annikura.seamap.utils.Utils;
 
+import javax.rmi.CORBA.Util;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -265,7 +266,7 @@ public class MapPane {
             for (ShipData ship : displayedData.ships) {
                 if (shipVisibilityControls.get(ship.shipName).isSelected() || shipVisibilityControls.get(ship.shipName).isIndeterminate()) {
                     double newDistance = ship.distanceToShip(newCoordinate);
-                    if (newDistance < CoordinateData.EPS * Math.pow(2.0, 8 - mapView.getZoom()) && (bestDistance == null || newDistance < bestDistance)) {
+                    if (newDistance < CoordinateData.EPS * Math.pow(2.0, 18 - mapView.getZoom()) && (bestDistance == null || newDistance < bestDistance)) {
                         nearestShip = ship;
                         bestDistance = newDistance;
                     }
@@ -276,7 +277,6 @@ public class MapPane {
             }
             MarkerData coordinateApproximation = nearestShip.projectCoordinateOnPath(newCoordinate);
             if (coordinateApproximation == null) {
-                System.out.println(nearestShip);
                 return;
             }
             MapLabel newMapLabel = new MapLabel(coordinateApproximation.date.substring(11), 12, 12).setCssClass("map-label");
@@ -316,7 +316,7 @@ public class MapPane {
         return mapPane;
     }
 
-    void clearOldData() {
+    private void clearOldData() {
         visibilityControlsTree.getRoot().getChildren().clear();
         shipVisibilityControls.clear();
         for (MapPane.ShipMapElements shipMapElement : shipMapElements) {
@@ -328,7 +328,19 @@ public class MapPane {
         showAll.setSelected(true);
     }
 
-    void loadMapData(@NotNull MapData mapData) {
+    private List<Coordinate> getArrow(
+            final @NotNull CoordinateData direction,
+            final @NotNull CoordinateData point) {
+        double arrowSize = 10000;
+        CoordinateData arrowDirection = direction.mul(-1).toLength(arrowSize);
+        List<Coordinate> arrow = new ArrayList<>();
+        arrow.add(Utils.coordinateDataToCoordinate(point.shiftByPixels(arrowDirection.turn(30))));
+        arrow.add(Utils.coordinateDataToCoordinate(point));
+        arrow.add(Utils.coordinateDataToCoordinate(point.shiftByPixels(arrowDirection.turn(-30))));
+        return arrow;
+    }
+
+    private void loadMapData(@NotNull MapData mapData) {
         mapView.setCenter(new Coordinate(mapData.mapCenterLat, mapData.mapCenterLng));
 
         for (ShipData ship : mapData.ships) {
@@ -361,10 +373,18 @@ public class MapPane {
 
         private ShipMapElements(final @NotNull List<MarkerData> markerData, @NotNull String color) {
             ArrayList<Coordinate> coordinates = new ArrayList<>();
-            markerData.forEach(marker -> {
+            CoordinateData previousMarker = null;
+            for (MarkerData marker : markerData) {
                 Coordinate newCoordinate = Utils.coordinateDataToCoordinate(marker.coordinate);
                 Marker newMarker = new Marker(getClass().getResource("/" + color + ".png"), -12, -12)
                         .setPosition(newCoordinate);
+                if (previousMarker != null) {
+                    CoordinateData arrowDirection = marker.coordinate.toXY().minus(previousMarker.toXY());
+                    CoordinateData arrowPlace = marker.coordinate.plus(previousMarker).mul(0.5);
+                    coordinates.add(Utils.coordinateDataToCoordinate(arrowPlace));
+                    coordinates.addAll(getArrow(arrowDirection, arrowPlace));
+                    coordinates.add(Utils.coordinateDataToCoordinate(arrowPlace));
+                }
                 coordinates.add(newCoordinate);
 
                 // TODO: add single date property
@@ -378,7 +398,7 @@ public class MapPane {
                     if (windDirection != null) {
                     windDirections.add(new CoordinateLine(
                             Utils.coordinateDataToCoordinate(marker.coordinate),
-                            Utils.coordinateDataToCoordinate(marker.coordinate.plus(windDirection.mul(0.2)))).setColor(Color.AQUA));
+                            Utils.coordinateDataToCoordinate(marker.coordinate.shiftByPixels(windDirection.mul(100000)))).setColor(Color.AQUA));
                     }
                 }
 
@@ -390,7 +410,8 @@ public class MapPane {
                 }
                 markers.add(newMarker);
                 markerMapping.put(newMarker.getId(), marker);
-            });
+                previousMarker = marker.coordinate;
+            }
             path = new CoordinateLine(coordinates).setColor(Color.valueOf(color)).setVisible(true);
         }
 

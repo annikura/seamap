@@ -17,7 +17,7 @@ public class    WeatherData {
         if (position < 0 || position > WeatherRecord.possibleDirections.size()) {
             return null;
         }
-        return new CoordinateData(1, 0).turn(22.5 * Math.PI / 180.0 * position);
+        return new CoordinateData(1, 0).turn(-22.5 * position);
     }
 
     public static WeatherData avg(final @NotNull WeatherData... weatherData) {
