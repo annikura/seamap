@@ -112,11 +112,11 @@ public class JournalPane {
             Stage loaderStage = new Stage();
             File file = fileChooser.showOpenDialog(loaderStage);
             if (file != null) {
-                ErrorOr<List<JournalRecord>> possibleRecords = DataLoader.downloadJournalRecords(file.getName());
+                ErrorOr<List<JournalRecord>> possibleRecords = DataLoader.downloadJournalRecords(file.getAbsolutePath());
                 if (possibleRecords.isError()) {
                     Alert alert = new Alert(Alert.AlertType.INFORMATION);
                     alert.setTitle("Loading problem");
-                    alert.setHeaderText("An error happened while trying to upload " + file.getPath() + " csv file.");
+                    alert.setHeaderText("An error happened while trying to upload " + file.getAbsolutePath() + " csv file.");
                     alert.setContentText(possibleRecords.getError());
 
                     alert.showAndWait();
@@ -133,11 +133,11 @@ public class JournalPane {
             Stage saverStage = new Stage();
             File file = fileChooser.showSaveDialog(saverStage);
             if (file != null) {
-                ErrorOr<Void> result = DataLoader.uploadJournalRecords(file.getPath(), table.getItems());
+                ErrorOr<Void> result = DataLoader.uploadJournalRecords(file.getAbsolutePath(), table.getItems());
                 if (result.isError()) {
                     Alert alert = new Alert(Alert.AlertType.INFORMATION);
                     alert.setTitle("Saving problem");
-                    alert.setHeaderText("Could not save file to " + file.getPath());
+                    alert.setHeaderText("Could not save file to " + file.getAbsolutePath());
                     alert.setContentText(result.getError());
 
                     alert.showAndWait();

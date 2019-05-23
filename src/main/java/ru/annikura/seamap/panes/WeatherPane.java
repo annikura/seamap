@@ -106,11 +106,11 @@ public class WeatherPane {
             Stage loaderStage = new Stage();
             File file = fileChooser.showOpenDialog(loaderStage);
             if (file != null) {
-                ErrorOr<List<WeatherRecord>> possibleRecords = DataLoader.downloadWeatherRecords(file.getName());
+                ErrorOr<List<WeatherRecord>> possibleRecords = DataLoader.downloadWeatherRecords(file.getAbsolutePath());
                 if (possibleRecords.isError()) {
                     Alert alert = new Alert(Alert.AlertType.INFORMATION);
                     alert.setTitle("Loading problem");
-                    alert.setHeaderText("An error happened while trying to upload " + file.getPath() + " csv file.");
+                    alert.setHeaderText("An error happened while trying to upload " + file.getAbsolutePath() + " csv file.");
                     alert.setContentText(possibleRecords.getError());
 
                     alert.showAndWait();
@@ -127,11 +127,11 @@ public class WeatherPane {
             Stage saverStage = new Stage();
             File file = fileChooser.showSaveDialog(saverStage);
             if (file != null) {
-                ErrorOr<Void> result = DataLoader.uploadWeatherRecords(file.getPath(), table.getItems());
+                ErrorOr<Void> result = DataLoader.uploadWeatherRecords(file.getAbsolutePath(), table.getItems());
                 if (result.isError()) {
                     Alert alert = new Alert(Alert.AlertType.INFORMATION);
                     alert.setTitle("Saving problem");
-                    alert.setHeaderText("Could not save file to " + file.getPath());
+                    alert.setHeaderText("Could not save file to " + file.getAbsolutePath());
                     alert.setContentText(result.getError());
 
                     alert.showAndWait();
