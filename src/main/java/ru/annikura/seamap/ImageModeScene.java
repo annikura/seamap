@@ -226,7 +226,7 @@ public class ImageModeScene {
         }
 
         private EventHandler<MouseEvent> imageOnMousePressedEventHandler =
-                new EventHandler<>() {
+                new EventHandler<MouseEvent>() {
                     @Override
                     public void handle(MouseEvent t) {
                         orgSceneX = t.getSceneX();
@@ -235,7 +235,7 @@ public class ImageModeScene {
                 };
 
         private EventHandler<MouseEvent> imageOnMouseDraggedEventHandler =
-                new EventHandler<>() {
+                new EventHandler<MouseEvent>() {
                     @Override
                     public void handle(MouseEvent t) {
                         double offsetX = t.getSceneX() - orgSceneX;

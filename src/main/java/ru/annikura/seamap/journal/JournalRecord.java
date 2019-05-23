@@ -52,10 +52,7 @@ public class JournalRecord {
             @NotNull String mqk,
             @NotNull String comment) {
 
-        lat1 = lat1.strip();
-        lat2 = lat2.strip();
-        lng1 = lng1.strip();
-        lng2 = lng2.strip();
+        // TODO: add stripping
 
         Double latd;
         Double lngd;
@@ -130,11 +127,8 @@ public class JournalRecord {
             @NotNull String comment) {
         JournalRecord journalRecord = new JournalRecord();
 
-        date = date.strip();
-        ship = ship.strip();
-        lat = lat.strip();
-        lng = lng.strip();
-        mqk = mqk.strip();
+
+        // TODO: add stripping
 
         if (!lat.isEmpty() || !lng.isEmpty()) {
             double latd;
@@ -187,7 +181,9 @@ public class JournalRecord {
                 return ErrorOr.createErr("Unknown Kriegsmarine Marinequadrat coordinate: " + square);
             }
 
-            String subsquare = mqk.substring(2).strip();
+
+            // TODO: add stripping
+            String subsquare = mqk.substring(2);
             int subsquareNumber;
             try {
                 subsquareNumber = subsquare.isEmpty() ? 0 : Integer.parseInt(subsquare);

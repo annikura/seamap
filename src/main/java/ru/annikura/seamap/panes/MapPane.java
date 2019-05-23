@@ -73,7 +73,7 @@ public class MapPane {
     private Label currentCoordinatesLabel = new Label("Current coordinates (lat, lng):");
     private Label currentCoordinatesValueLabel  = new Label();
 
-    private Image crossImage = new Image(getClass().getResourceAsStream("cross.png"));
+    private Image crossImage = new Image(getClass().getResourceAsStream("/cross.png"));
     private ImageView crossImageView = new ImageView(crossImage);
     private Button closeHelpButton = new Button();
     private HBox crossButtonBox = new HBox();

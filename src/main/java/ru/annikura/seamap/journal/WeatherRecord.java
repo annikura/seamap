@@ -50,11 +50,8 @@ public class WeatherRecord {
             @NotNull String visibilityRange) {
         WeatherRecord weatherRecord = new WeatherRecord();
 
-        date = date.strip();
-        source = source.strip();
-        windDirection = windDirection.strip().toUpperCase();
-        windStrength = windStrength.strip();
-        visibilityRange = visibilityRange.strip();
+        // TODO: add stripping
+        windDirection = windDirection.toUpperCase();
 
         if (date.isEmpty()) {
             weatherRecord.date = null;
