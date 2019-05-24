@@ -396,9 +396,12 @@ public class MapPane {
                 if (marker.weatherData != null) {
                     CoordinateData windDirection = marker.weatherData.getWindDirectionVector();
                     if (windDirection != null) {
-                    windDirections.add(new CoordinateLine(
-                            Utils.coordinateDataToCoordinate(marker.coordinate),
-                            Utils.coordinateDataToCoordinate(marker.coordinate.shiftByPixels(windDirection.mul(100000)))).setColor(Color.AQUA));
+                        List<Coordinate> windCoordinates = new ArrayList<>();
+                        windCoordinates.add(Utils.coordinateDataToCoordinate(marker.coordinate));
+                        CoordinateData arrowEnd = marker.coordinate.shiftByPixels(windDirection.mul(50000));
+                        windCoordinates.add(Utils.coordinateDataToCoordinate(arrowEnd));
+                        windCoordinates.addAll(getArrow(windDirection, arrowEnd));
+                        windDirections.add(new CoordinateLine(windCoordinates).setColor(marker.weatherData.getWindColour()));
                     }
                 }
 

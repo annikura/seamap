@@ -1,12 +1,13 @@
 package ru.annikura.seamap.data;
 
+import javafx.scene.paint.Color;
 import org.jetbrains.annotations.NotNull;
 import ru.annikura.seamap.journal.WeatherRecord;
 
 import java.util.ArrayList;
 import java.util.HashSet;
 
-public class    WeatherData {
+public class WeatherData {
     public String source;
     public Double windStrength;
     public String windDirection;
@@ -18,6 +19,26 @@ public class    WeatherData {
             return null;
         }
         return new CoordinateData(1, 0).turn(-22.5 * position);
+    }
+
+    @NotNull
+    public Color getWindColour() {
+        if (windStrength == null) {
+            return Color.GRAY;
+        }
+        if (windStrength <= 2) {
+            return Color.DARKGREEN;
+        }
+        if (windStrength <= 4) {
+            return Color.GREENYELLOW;
+        }
+        if (windStrength <= 6) {
+            return Color.GOLD;
+        }
+        if (windStrength <= 8) {
+            return Color.ORANGE;
+        }
+        return Color.DARKRED;
     }
 
     public static WeatherData avg(final @NotNull WeatherData... weatherData) {
