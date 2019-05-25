@@ -9,13 +9,10 @@ import javafx.beans.value.ChangeListener;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
-import javafx.scene.Scene;
-import javafx.scene.SnapshotParameters;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.CheckBoxTreeCell;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
-import javafx.scene.image.WritableImage;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseEvent;
@@ -34,7 +31,6 @@ import ru.annikura.seamap.journal.RecordsProcesser;
 import ru.annikura.seamap.utils.Holder;
 import ru.annikura.seamap.utils.Utils;
 
-import javax.rmi.CORBA.Util;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -57,7 +53,7 @@ public class MapPane {
     private CheckBox showSquaresCheckBox = new CheckBox("Show relevant marinequadrates");
     private CheckBox showLabelsCheckBox = new CheckBox("Show relevant time marks");
     private CheckBox showWindDirectionsCheckBox = new CheckBox("Show relevant wind directions");
-    private Button imageModeButton = new Button("Open image mode");
+    private CheckBox showImagesCheckBox = new CheckBox("Show images layer");
 
     private VBox contentSettingsPaneBox = new VBox();
     private TitledPane contentSettings = new TitledPane("Map settings", contentSettingsPaneBox);
@@ -94,10 +90,8 @@ public class MapPane {
     private MapData displayedData = new MapData();
 
     public MapPane(@NotNull Stage stage, @NotNull JournalPane journalPane, @NotNull WeatherPane weatherPane) {
-        imageModeScene = new ImageModeScene(x -> {
-            imageModeButton.setDisable(false);
-            return null;
-        });
+        imageModeScene = new ImageModeScene();
+        imageModeScene.getImagesVisibilityProperty().bind(showImagesCheckBox.selectedProperty().or(imageModeScene.getControlsPane().expandedProperty()));
 
         final OfflineCache offlineCache = mapView.getOfflineCache();
         final String cacheDir = "seamap-cache";
@@ -134,7 +128,7 @@ public class MapPane {
         // Setting up left pane.
 
         leftPanel.setMinWidth(400);
-        leftPanel.getPanes().addAll(mapSettings, contentSettings);
+        leftPanel.getPanes().addAll(mapSettings, contentSettings, imageModeScene.getControlsPane());
         leftPanel.setExpandedPane(mapSettings);
 
         showAll.setToggleGroup(visibilityToggle);
@@ -165,26 +159,6 @@ public class MapPane {
         visibilityControlsTree.setRoot(visibilityControlsRootItem);
         visibilityControlsTree.setShowRoot(true);
         visibilityControlsTree.setCellFactory(CheckBoxTreeCell.forTreeView());
-        imageModeButton.setOnMouseClicked(mouseEvent -> {
-            WritableImage mapSnapshot = mapView.snapshot(new SnapshotParameters(), null);
-
-            Stage newWindow = new Stage();
-            newWindow.setOnCloseRequest(e -> imageModeButton.setDisable(false));
-
-            newWindow.setX(stage.getX() + 200);
-            newWindow.setY(stage.getY() + 100);
-            newWindow.setResizable(false);
-
-            StackPane newStack = new StackPane();
-            imageModeScene.setBackgroundImage(mapSnapshot);
-            newStack.getChildren().add(imageModeScene.getMainPane());
-            Scene secondScene = new Scene(newStack, stage.getScene().getWidth(), stage.getScene().getHeight());
-
-            imageModeButton.setDisable(true);
-            newWindow.setScene(secondScene);
-            newWindow.show();
-        });
-
         mapSettingsPaneBox.setSpacing(5.0);
         mapSettingsPaneBox.getChildren().addAll(
                 showAll, showOnlyMarkers, showOnlyPaths, customMode,
@@ -192,7 +166,7 @@ public class MapPane {
                 showSquaresCheckBox,
                 showLabelsCheckBox,
                 showWindDirectionsCheckBox,
-                imageModeButton,
+                showImagesCheckBox,
                 loadFromTableButton);
 
         // Initialize MapSettings
@@ -292,7 +266,7 @@ public class MapPane {
         });
         statusBar.getChildren().addAll(currentCoordinatesLabel, currentCoordinatesValueLabel);
 
-        mapViewStack.getChildren().addAll(mapView);
+        mapViewStack.getChildren().addAll(mapView, imageModeScene.getMainPane());
         mapPane.setCenter(mapViewStack);
         mapPane.setBottom(statusBar);
         mapPane.setLeft(leftPanel);

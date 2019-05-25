@@ -14,6 +14,7 @@ public class Main extends Application {
         StackPane root = new StackPane();
 
         Scene scene = new Scene(root, 1500, 1000);
+        scene.getStylesheets().add(getClass().getResource("/application.css").toExternalForm());
         stage.setScene(scene);
         root.getChildren().add(new MainScene(stage).getMainPane());
 
