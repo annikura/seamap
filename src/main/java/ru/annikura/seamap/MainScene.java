@@ -5,6 +5,9 @@ import javafx.scene.control.Tab;
 import javafx.scene.control.TabPane;
 import javafx.stage.Stage;
 import org.jetbrains.annotations.NotNull;
+import ru.annikura.seamap.journal.ChangebleStorage;
+import ru.annikura.seamap.journal.JournalRecord;
+import ru.annikura.seamap.journal.WeatherRecord;
 import ru.annikura.seamap.panes.JournalPane;
 import ru.annikura.seamap.panes.MapPane;
 import ru.annikura.seamap.panes.WeatherPane;
@@ -15,8 +18,11 @@ public class MainScene {
     final private Tab weatherTap = new Tab("Weather");
     final private Tab mapTab = new Tab("Map");
 
-    final private JournalPane journalPane = new JournalPane();
-    final private WeatherPane weatherPane = new WeatherPane();
+    final private ChangebleStorage<JournalRecord> journalStorage = new ChangebleStorage<>();
+    final private ChangebleStorage<WeatherRecord> weatherStorage = new ChangebleStorage<>();
+
+    final private JournalPane journalPane = new JournalPane(journalStorage);
+    final private WeatherPane weatherPane = new WeatherPane(weatherStorage);
     final private MapPane mapPane;
 
     public MainScene(final @NotNull Stage stage) {
@@ -24,7 +30,7 @@ public class MainScene {
 
         journalTap.setContent(journalPane.getTablePane());
         weatherTap.setContent(weatherPane.getTablePane());
-        mapPane = new MapPane(stage, journalPane, weatherPane);
+        mapPane = new MapPane(stage, journalStorage, weatherStorage);
 
         mainPane.getTabs().addAll(mapTab, journalTap, weatherTap);
         mapTab.setContent(mapPane.getMapPane());

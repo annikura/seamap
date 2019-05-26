@@ -27,7 +27,10 @@ import javafx.stage.Stage;
 import org.jetbrains.annotations.NotNull;
 import ru.annikura.seamap.ImageModeScene;
 import ru.annikura.seamap.data.*;
+import ru.annikura.seamap.journal.ChangebleStorage;
+import ru.annikura.seamap.journal.JournalRecord;
 import ru.annikura.seamap.journal.RecordsProcesser;
+import ru.annikura.seamap.journal.WeatherRecord;
 import ru.annikura.seamap.utils.Holder;
 import ru.annikura.seamap.utils.Utils;
 
@@ -89,9 +92,13 @@ public class MapPane {
 
     private MapData displayedData = new MapData();
 
-    public MapPane(@NotNull Stage stage, @NotNull JournalPane journalPane, @NotNull WeatherPane weatherPane) {
+    public MapPane(final @NotNull Stage stage,
+                   final @NotNull ChangebleStorage<JournalRecord> journalRecordChangebleStorage,
+                   final @NotNull ChangebleStorage<WeatherRecord> weatherRecordChangebleStorage) {
         imageModeScene = new ImageModeScene();
-        imageModeScene.visibilityProperty().bind(showImagesCheckBox.selectedProperty().or(imageModeScene.getControlsPane().expandedProperty()));
+        imageModeScene.visibilityProperty().bind(
+                showImagesCheckBox.selectedProperty()
+                        .or(imageModeScene.getControlsPane().expandedProperty()));
 
         final OfflineCache offlineCache = mapView.getOfflineCache();
         final String cacheDir = "seamap-cache";
@@ -99,7 +106,7 @@ public class MapPane {
         mapView.setCustomMapviewCssURL(getClass().getResource("/custom_mapview.css"));
 
         mapView.initializedProperty().addListener((observableValue, aBoolean, t1) -> {
-            mapView.setCenter(new Coordinate(10.0, 10.0));
+            mapView.setCenter(new Coordinate(0.0, 0.0));
             mapView.setMapType(MapType.OSM);
             mapView.addEventHandler(MarkerEvent.MARKER_CLICKED, event -> {
                 // TODO: validate that marker has such data
@@ -273,7 +280,9 @@ public class MapPane {
 
         loadFromTableButton.setOnAction(e -> {
             clearOldData();
-            displayedData = RecordsProcesser.processRecords(journalPane.getRecords(), weatherPane.getRecords());
+            displayedData = RecordsProcesser.processRecords(
+                    journalRecordChangebleStorage.getItems(),
+                    weatherRecordChangebleStorage.getItems());
             loadMapData(displayedData);
         });
 
@@ -302,7 +311,7 @@ public class MapPane {
         showAll.setSelected(true);
     }
 
-    private List<Coordinate> getArrow(
+    private static List<Coordinate> getArrow(
             final @NotNull CoordinateData direction,
             final @NotNull CoordinateData point) {
         double arrowSize = 10000;
