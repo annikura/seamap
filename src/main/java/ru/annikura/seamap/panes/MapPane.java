@@ -91,7 +91,7 @@ public class MapPane {
 
     public MapPane(@NotNull Stage stage, @NotNull JournalPane journalPane, @NotNull WeatherPane weatherPane) {
         imageModeScene = new ImageModeScene();
-        imageModeScene.getImagesVisibilityProperty().bind(showImagesCheckBox.selectedProperty().or(imageModeScene.getControlsPane().expandedProperty()));
+        imageModeScene.visibilityProperty().bind(showImagesCheckBox.selectedProperty().or(imageModeScene.getControlsPane().expandedProperty()));
 
         final OfflineCache offlineCache = mapView.getOfflineCache();
         final String cacheDir = "seamap-cache";

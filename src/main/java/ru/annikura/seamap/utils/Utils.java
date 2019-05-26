@@ -1,6 +1,8 @@
 package ru.annikura.seamap.utils;
 
 import com.sothawo.mapjfx.Coordinate;
+import javafx.scene.control.Label;
+import javafx.scene.layout.VBox;
 import org.jetbrains.annotations.NotNull;
 import ru.annikura.seamap.data.CoordinateData;
 
