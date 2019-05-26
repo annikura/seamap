@@ -36,6 +36,7 @@ public class ImageModeScene {
     private AnchorPane anchorPane = new AnchorPane();
     private ScrollPane scrollPane = new ScrollPane(anchorPane);
 
+    private VBox imageControlsList = new VBox();
     private VBox imageConrolsPane = new VBox();
     private TitledPane imageControls = new TitledPane("Image controls", imageConrolsPane);
 
@@ -51,6 +52,8 @@ public class ImageModeScene {
 
     private Button createSaveButton() {
         Button saveButton = new Button("Save");
+
+        // TODO: fix save
         saveButton.setOnMouseClicked(mouseEvent -> {
             FileChooser fileChooser = new FileChooser();
             fileChooser.setTitle("Save map");
@@ -112,7 +115,7 @@ public class ImageModeScene {
                     anchorPane.getChildren().remove(newImage.getImageView());
                 });
 
-                imageConrolsPane.getChildren().add(closableImangeControlsBox);
+                imageControlsList.getChildren().add(closableImangeControlsBox);
                 images.add(newImage);
 
                 anchorPane.getChildren().add(newImage.getImageView());
@@ -133,11 +136,13 @@ public class ImageModeScene {
     public ImageModeScene() {
         setupBackground();
 
+        ScrollPane scrollableImageControls = new ScrollPane(imageControlsList);
+        scrollableImageControls.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+
         imageConrolsPane.setSpacing(10);
-        imageConrolsPane.getChildren().addAll(createButtonsPane());
+        imageConrolsPane.getChildren().addAll(createButtonsPane(), scrollableImageControls);
         imageConrolsPane.setAlignment(Pos.TOP_LEFT);
 
-        imageControls.setContent(imageConrolsPane);
         imageControls.expandedProperty().addListener(
                 ((observable, oldValue, newValue) -> scrollPane.setMouseTransparent(!imageControls.isExpanded())));
     }
