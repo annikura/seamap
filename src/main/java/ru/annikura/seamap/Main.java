@@ -13,7 +13,7 @@ public class Main extends Application {
     public void start(Stage stage) {
         StackPane root = new StackPane();
 
-        Scene scene = new Scene(root, 1500, 1000);
+        Scene scene = new Scene(root, 1800, 1200);
         scene.getStylesheets().add(getClass().getResource("/application.css").toExternalForm());
         stage.setScene(scene);
         root.getChildren().add(new MainScene(stage).getMainPane());

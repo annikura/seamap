@@ -135,6 +135,7 @@ public class MapPane {
                    final @NotNull ChangebleStorage<WeatherRecord> weatherRecordChangebleStorage,
                    final @Nullable String cacheDirectory) {
         mapViewerElemets = new MapViewerElemets(cacheDirectory);
+        StackPane mapViewStack = new StackPane();
 
         // Create map area control panel.
 
@@ -159,7 +160,7 @@ public class MapPane {
 
         // Create image viewer elements
 
-        ImageViewerElements imageViewerElements = new ImageViewerElements();
+        ImageViewerElements imageViewerElements = new ImageViewerElements(mapViewStack);
         imageViewerElements.visibilityProperty().bind(
                 showImagesCheckBox.selectedProperty()
                         .or(imageViewerElements.getControlsPane().expandedProperty()));
@@ -207,7 +208,6 @@ public class MapPane {
 
         // Collect all elements
 
-        StackPane mapViewStack = new StackPane();
         mapViewStack.getChildren().addAll(mapViewerElemets.getMapView(), imageViewerElements.getMainPane());
         mapPane.setCenter(mapViewStack);
         mapPane.setBottom(createStatusBar());

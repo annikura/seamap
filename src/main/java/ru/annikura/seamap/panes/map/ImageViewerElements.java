@@ -51,7 +51,7 @@ public class ImageViewerElements {
         scrollPane.setVbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
     }
 
-    private Button createSaveButton() {
+    private Button createSaveButton(final @NotNull Node savedPanel) {
         Button saveButton = new Button("Save");
 
         // TODO: fix save
@@ -61,7 +61,7 @@ public class ImageViewerElements {
             Stage saverStage = new Stage();
             File file = fileChooser.showSaveDialog(saverStage);
             if (file != null) {
-                WritableImage wim = scrollPane.snapshot(new SnapshotParameters(), null);
+                WritableImage wim = savedPanel.snapshot(new SnapshotParameters(), null);
                 try {
                     ImageIO.write(SwingFXUtils.fromFXImage(wim,
                             null), "png", file);
@@ -125,23 +125,23 @@ public class ImageViewerElements {
         return uploadNewImageButton;
     }
 
-    private Node createButtonsPane() {
+    private Node createButtonsPane(final @NotNull Node savedPanel) {
         HBox buttonsPane = new HBox();
         buttonsPane.getChildren().addAll(
                 createImageUploadButton(),
-                createSaveButton());
+                createSaveButton(savedPanel));
         buttonsPane.setSpacing(10);
         return buttonsPane;
     }
 
-    public ImageViewerElements() {
+    public ImageViewerElements(final @NotNull Node savedPanel) {
         setupBackground();
 
         ScrollPane scrollableImageControls = new ScrollPane(imageControlsList);
         scrollableImageControls.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
 
         imageConrolsPane.setSpacing(10);
-        imageConrolsPane.getChildren().addAll(createButtonsPane(), scrollableImageControls);
+        imageConrolsPane.getChildren().addAll(createButtonsPane(savedPanel), scrollableImageControls);
         imageConrolsPane.setAlignment(Pos.TOP_LEFT);
 
         imageControls.expandedProperty().addListener(
