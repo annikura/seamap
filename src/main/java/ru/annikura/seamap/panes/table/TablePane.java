@@ -54,6 +54,7 @@ public class TablePane<T> {
         tableContentTitle.setContent(tableContentTitleBox);
 
         tableLeftPanel.setMinWidth(400);
+        tableLeftPanel.setMaxWidth(400);
         tableLeftPanel.getPanes().add(tableContentTitle);
         tableLeftPanel.setExpandedPane(tableContentTitle);
 
