@@ -7,6 +7,7 @@ import javafx.beans.value.ChangeListener;
 import javafx.scene.Node;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.CheckBoxTreeCell;
+import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
@@ -59,6 +60,12 @@ public class MapViewerElemets {
             mapView.addEventHandler(MouseEvent.MOUSE_EXITED, mouseEvent -> {
                 if (tipLabelHolder.getValue() != null) {
                     tipLabelHolder.getValue().setVisible(false);
+                }
+            });
+
+            mapView.addEventFilter(MouseEvent.MOUSE_PRESSED, event -> {
+                if (event.getButton().equals(MouseButton.SECONDARY)) {
+                    event.consume();
                 }
             });
 
