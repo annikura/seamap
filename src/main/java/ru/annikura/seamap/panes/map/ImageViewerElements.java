@@ -1,4 +1,4 @@
-package ru.annikura.seamap;
+package ru.annikura.seamap.panes.map;
 
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
@@ -21,7 +21,6 @@ import javafx.stage.Stage;
 import javafx.stage.Window;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import ru.annikura.seamap.panes.DynamicImageElements;
 
 import javax.imageio.ImageIO;
 import java.io.File;

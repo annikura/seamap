@@ -1,4 +1,4 @@
-package ru.annikura.seamap.panes;
+package ru.annikura.seamap.panes.map;
 
 import javafx.event.EventHandler;
 import javafx.scene.image.Image;

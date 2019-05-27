@@ -8,9 +8,9 @@ import org.jetbrains.annotations.NotNull;
 import ru.annikura.seamap.journal.ChangebleStorage;
 import ru.annikura.seamap.journal.JournalRecord;
 import ru.annikura.seamap.journal.WeatherRecord;
-import ru.annikura.seamap.panes.JournalPane;
-import ru.annikura.seamap.panes.MapPane;
-import ru.annikura.seamap.panes.WeatherPane;
+import ru.annikura.seamap.panes.table.JournalPane;
+import ru.annikura.seamap.panes.map.MapPane;
+import ru.annikura.seamap.panes.table.WeatherPane;
 
 import java.nio.file.Paths;
 

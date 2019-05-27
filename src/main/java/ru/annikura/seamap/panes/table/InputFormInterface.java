@@ -1,4 +1,4 @@
-package ru.annikura.seamap.panes;
+package ru.annikura.seamap.panes.table;
 
 import javafx.scene.Node;
 import ru.annikura.seamap.utils.ErrorOr;

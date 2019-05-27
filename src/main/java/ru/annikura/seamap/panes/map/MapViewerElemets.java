@@ -1,4 +1,4 @@
-package ru.annikura.seamap.panes;
+package ru.annikura.seamap.panes.map;
 
 import com.sothawo.mapjfx.*;
 import com.sothawo.mapjfx.event.MapViewEvent;
@@ -20,7 +20,6 @@ import ru.annikura.seamap.data.ShipData;
 import ru.annikura.seamap.utils.Holder;
 import ru.annikura.seamap.utils.Utils;
 
-import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.*;

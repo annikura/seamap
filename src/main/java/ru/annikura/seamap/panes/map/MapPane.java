@@ -1,4 +1,4 @@
-package ru.annikura.seamap.panes;
+package ru.annikura.seamap.panes.map;
 
 import com.sothawo.mapjfx.MapType;
 import com.sothawo.mapjfx.event.MapViewEvent;
@@ -20,7 +20,6 @@ import javafx.scene.text.FontWeight;
 import javafx.stage.Stage;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import ru.annikura.seamap.ImageViewerElements;
 import ru.annikura.seamap.data.MapData;
 import ru.annikura.seamap.data.MarkerData;
 import ru.annikura.seamap.data.WeatherData;

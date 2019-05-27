@@ -1,4 +1,4 @@
-package ru.annikura.seamap.panes;
+package ru.annikura.seamap.panes.table;
 
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
