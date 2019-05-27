@@ -12,6 +12,8 @@ import ru.annikura.seamap.panes.JournalPane;
 import ru.annikura.seamap.panes.MapPane;
 import ru.annikura.seamap.panes.WeatherPane;
 
+import java.nio.file.Paths;
+
 public class MainScene {
     final private TabPane mainPane = new TabPane();
     final private Tab journalTap = new Tab("Journal");
@@ -30,7 +32,10 @@ public class MainScene {
 
         journalTap.setContent(journalPane.getTablePane());
         weatherTap.setContent(weatherPane.getTablePane());
-        mapPane = new MapPane(stage, journalStorage, weatherStorage, null);
+        mapPane = new MapPane(stage, journalStorage, weatherStorage,
+                Paths.get(Paths.get(
+                        this.getClass().getProtectionDomain().getCodeSource().getLocation().getPath()).getParent().toString(),
+                        "seamap-cache").toString());
 
         mainPane.getTabs().addAll(mapTab, journalTap, weatherTap);
         mapTab.setContent(mapPane.getMapPane());

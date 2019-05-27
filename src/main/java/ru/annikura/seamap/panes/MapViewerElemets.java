@@ -74,10 +74,12 @@ public class MapViewerElemets {
                     Files.createDirectories(Paths.get(cacheDirectory));
                     mapView.getOfflineCache().setCacheDirectory(cacheDirectory);
                     mapView.getOfflineCache().setActive(true);
-                } catch (IOException e) {
-                    // TODO: show alert
-                    System.out.println(e.getMessage());
-                } catch (NullPointerException ignored) {
+                } catch (Exception e) {
+                    Alert alert = new Alert(Alert.AlertType.INFORMATION);
+                    alert.setTitle("Cashing error");
+                    alert.setHeaderText("Unable to write to directory '" + cacheDirectory + "'");
+                    alert.setContentText(e.getMessage());
+                    alert.showAndWait();
                 }
             }
         });
