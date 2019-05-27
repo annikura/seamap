@@ -26,7 +26,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 
-public class ImageModeScene {
+public class ImageViewerElements {
     /**
      * Anchor pane and scroll pane are representing the area where all images are placed.
      * The main purpose is to bind images to the anchor pane so that they would not shift if the window is resized.
@@ -133,7 +133,7 @@ public class ImageModeScene {
         return buttonsPane;
     }
 
-    public ImageModeScene() {
+    public ImageViewerElements() {
         setupBackground();
 
         ScrollPane scrollableImageControls = new ScrollPane(imageControlsList);

@@ -19,7 +19,7 @@ import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.stage.Stage;
 import org.jetbrains.annotations.NotNull;
-import ru.annikura.seamap.ImageModeScene;
+import ru.annikura.seamap.ImageViewerElements;
 import ru.annikura.seamap.data.MapData;
 import ru.annikura.seamap.data.MarkerData;
 import ru.annikura.seamap.data.WeatherData;
@@ -29,79 +29,46 @@ import ru.annikura.seamap.journal.RecordsProcesser;
 import ru.annikura.seamap.journal.WeatherRecord;
 
 public class MapPane {
+    private BorderPane mapPane = new BorderPane();
     private MapViewerElemets mapViewerElemets = new MapViewerElemets();
 
-    private VBox mapSettingsPaneBox = new VBox();
-    private TitledPane mapSettings = new TitledPane("Content settings", mapSettingsPaneBox);
-
-    private BorderPane mapPane = new BorderPane();
-    private StackPane mapViewStack = new StackPane();
-    private Accordion leftPanel = new Accordion();
-
-    private CheckBox showImagesCheckBox = new CheckBox("Show images layer");
-
-    private VBox contentSettingsPaneBox = new VBox();
-    private TitledPane contentSettings = new TitledPane("Map settings", contentSettingsPaneBox);
-    private RadioButton osmMapRadioButton = new RadioButton("OpenStreetMap");
-    private RadioButton bingRoadMapRadioButton = new RadioButton("Bing road");
-    private RadioButton bingArealMapRadioButton = new RadioButton("Bing areal");
-    private ToggleGroup mapTypeGroup = new ToggleGroup();
-    private Label bingApiLabel = new Label("Bing Api: ");
-    private TextField bingApiField = new TextField();
-    private HBox bingApiBox = new HBox(bingApiLabel, bingApiField);
-    private Button loadFromTableButton = new Button("Reload data from table");
-
-    private HBox statusBar = new HBox();
-    private Label currentCoordinatesLabel = new Label("Current coordinates (lat, lng):");
     private Label currentCoordinatesValueLabel  = new Label();
+    private TextArea generalInfoContent;
 
-    private Image crossImage = new Image(getClass().getResourceAsStream("/cross.png"));
-    private ImageView crossImageView = new ImageView(crossImage);
-    private Button closeHelpButton = new Button();
-    private HBox crossButtonBox = new HBox();
-    private VBox helpBox = new VBox();
-    private TextArea generalInfoContent = new TextArea();
+    @NotNull
+    private Node createStatusBar() {
+        HBox statusBar = new HBox();
+        statusBar.setSpacing(10);
+        statusBar.setAlignment(Pos.CENTER);
 
-    private ImageModeScene imageModeScene;
+        mapViewerElemets.getMapView().addEventHandler(
+                MapViewEvent.MAP_POINTER_MOVED, event -> currentCoordinatesValueLabel.setText(
+                String.format("%.10f, %.10f", event.getCoordinate().getLatitude(), event.getCoordinate().getLongitude())));
 
+        Label currentCoordinatesLabel = new Label("Current coordinates (lat, lng):");
+        statusBar.getChildren().addAll(currentCoordinatesLabel, currentCoordinatesValueLabel);
 
-    public MapPane(final @NotNull Stage stage,
-                   final @NotNull ChangebleStorage<JournalRecord> journalRecordChangebleStorage,
-                   final @NotNull ChangebleStorage<WeatherRecord> weatherRecordChangebleStorage) {
-        imageModeScene = new ImageModeScene();
-        imageModeScene.visibilityProperty().bind(
-                showImagesCheckBox.selectedProperty()
-                        .or(imageModeScene.getControlsPane().expandedProperty()));
+        return statusBar;
+    }
 
-        mapViewerElemets.getMapView().addEventHandler(MarkerEvent.MARKER_CLICKED, event -> {
-            // TODO: validate that marker has such data
-            MarkerData markerData = mapViewerElemets.getMarkerData(event.getMarker().getId());
-            generalInfoContent.setText(generateGeneralReport(markerData));
-            mapPane.setRight(helpBox);
-        });
+    @NotNull
+    private Node createMapSettings() {
+        RadioButton osmMapRadioButton = new RadioButton("OpenStreetMap");
+        RadioButton bingRoadMapRadioButton = new RadioButton("Bing road");
+        RadioButton bingArealMapRadioButton = new RadioButton("Bing areal");
+        TextField bingApiField = new TextField();
 
-        // Setting up left pane.
-
-        leftPanel.setMinWidth(400);
-        leftPanel.getPanes().addAll(mapSettings, contentSettings, imageModeScene.getControlsPane());
-        leftPanel.setExpandedPane(mapSettings);
-
-        mapSettingsPaneBox.setSpacing(5.0);
-        mapSettingsPaneBox.getChildren().addAll(
-                mapViewerElemets.getMapViewControls(),
-                showImagesCheckBox,
-                loadFromTableButton);
-
-        // Initialize MapSettings
-
+        ToggleGroup mapTypeGroup = new ToggleGroup();
         mapTypeGroup.getToggles().addAll(osmMapRadioButton, bingRoadMapRadioButton, bingArealMapRadioButton);
-        contentSettingsPaneBox.getChildren().addAll(
+        Label bingApiLabel = new Label("Bing Api: ");
+        HBox bingApiBox = new HBox(bingApiLabel, bingApiField);
+        VBox mapSettingsBox = new VBox(
                 osmMapRadioButton,
                 bingArealMapRadioButton,
                 bingRoadMapRadioButton,
                 bingApiBox);
-        contentSettingsPaneBox.setSpacing(10);
-        contentSettingsPaneBox.setStyle("-fx-padding: 15px;");
+        mapSettingsBox.setSpacing(10);
+        mapSettingsBox.setStyle("-fx-padding: 15px;");
         osmMapRadioButton.setSelected(true);
         bingRoadMapRadioButton.setDisable(true);
         bingArealMapRadioButton.setDisable(true);
@@ -109,6 +76,7 @@ public class MapPane {
             bingArealMapRadioButton.setDisable(bingApiField.getText().isEmpty());
             bingRoadMapRadioButton.setDisable(bingApiField.getText().isEmpty());
         });
+
         mapTypeGroup.selectedToggleProperty().addListener((observableValue, oldToggle, newToogle) -> {
             if (newToogle.equals(osmMapRadioButton)) {
                 mapViewerElemets.getMapView().setMapType(MapType.OSM);
@@ -123,19 +91,28 @@ public class MapPane {
             }
         });
 
-        contentSettings.setContent(contentSettingsPaneBox);
+        return mapSettingsBox;
+    }
 
+    @NotNull
+    private Node createInfoPanel() {
+        Image crossImage = new Image(getClass().getResourceAsStream("/cross.png"));
+        ImageView crossImageView = new ImageView(crossImage);
+        Button closeHelpButton = new Button();
         closeHelpButton.setGraphic(crossImageView);
         closeHelpButton.getStylesheets().add("cross_button.css");
         closeHelpButton.setOnMouseClicked(mouseEvent -> mapPane.setRight(null));
 
+        HBox crossButtonBox = new HBox();
         crossButtonBox.setAlignment(Pos.CENTER_RIGHT);
         crossButtonBox.getChildren().add(closeHelpButton);
-        helpBox.setMaxWidth(400);
 
         Label generalInfoHeading = new Label("General info");
         generalInfoHeading.setFont(Font.font("Verdana", FontWeight.BOLD, 25));
         generalInfoHeading.setOpaqueInsets(new Insets(20));
+
+        generalInfoContent = new TextArea();
+
         generalInfoContent.setWrapText(true);
         generalInfoContent.setEditable(false);
         generalInfoContent.setMinHeight(500);
@@ -144,20 +121,25 @@ public class MapPane {
                         "-fx-background-insets: 0px ;");
         VBox innerHelpBox = new VBox(generalInfoHeading, generalInfoContent);
         innerHelpBox.setStyle("-fx-padding: 15px;");
-        helpBox.getChildren().addAll(closeHelpButton, innerHelpBox);
+        VBox result = new VBox(closeHelpButton, innerHelpBox);
+        result.setMaxWidth(400);
 
-        statusBar.setSpacing(10);
-        statusBar.setAlignment(Pos.CENTER);
+        return result;
+    }
 
-        mapViewerElemets.getMapView().addEventHandler(MapViewEvent.MAP_POINTER_MOVED, event -> currentCoordinatesValueLabel.setText(
-                String.format("%.10f, %.10f", event.getCoordinate().getLatitude(), event.getCoordinate().getLongitude())));
+    public MapPane(final @NotNull Stage stage,
+                   final @NotNull ChangebleStorage<JournalRecord> journalRecordChangebleStorage,
+                   final @NotNull ChangebleStorage<WeatherRecord> weatherRecordChangebleStorage) {
+        // Create map area control panel.
 
-        statusBar.getChildren().addAll(currentCoordinatesLabel, currentCoordinatesValueLabel);
-
-        mapViewStack.getChildren().addAll(mapViewerElemets.getMapView(), imageModeScene.getMainPane());
-        mapPane.setCenter(mapViewStack);
-        mapPane.setBottom(statusBar);
-        mapPane.setLeft(leftPanel);
+        CheckBox showImagesCheckBox = new CheckBox("Show images layer");
+        VBox mapSettingsPaneBox = new VBox();
+        mapSettingsPaneBox.setSpacing(5.0);
+        Button loadFromTableButton = new Button("Reload data from table");
+        mapSettingsPaneBox.getChildren().addAll(
+                mapViewerElemets.getMapViewControls(),
+                showImagesCheckBox,
+                loadFromTableButton);
 
         loadFromTableButton.setOnAction(e -> {
             mapPane.setRight(null);
@@ -169,6 +151,25 @@ public class MapPane {
             mapViewerElemets.loadMapData(displayedData);
         });
 
+        // Create image viewer elements
+
+        ImageViewerElements imageViewerElements = new ImageViewerElements();
+        imageViewerElements.visibilityProperty().bind(
+                showImagesCheckBox.selectedProperty()
+                        .or(imageViewerElements.getControlsPane().expandedProperty()));
+
+        // Setting up left pane.
+
+        Accordion leftPanel = new Accordion();
+        leftPanel.setMinWidth(400);
+        TitledPane mapSettings = new TitledPane("Content settings", mapSettingsPaneBox);
+        TitledPane contentSettings = new TitledPane("Map settings", createMapSettings());
+        leftPanel.getPanes().addAll(mapSettings, contentSettings, imageViewerElements.getControlsPane());
+        leftPanel.setExpandedPane(mapSettings);
+
+        // Create info panel
+
+        Node infoBox = createInfoPanel();
         stage.getScene().addEventHandler(KeyEvent.KEY_PRESSED, t -> {
             if (t.getCode()== KeyCode.ESCAPE) {
                 if (mapPane.getRight() != null) {
@@ -176,13 +177,27 @@ public class MapPane {
                 }
             }
         });
+
+        mapViewerElemets.getMapView().addEventHandler(MarkerEvent.MARKER_CLICKED, event -> {
+            // TODO: validate that marker has such data
+            MarkerData markerData = mapViewerElemets.getMarkerData(event.getMarker().getId());
+            generalInfoContent.setText(generateGeneralReport(markerData));
+            mapPane.setRight(infoBox);
+        });
+
+        // Collect all elements
+
+        StackPane mapViewStack = new StackPane();
+        mapViewStack.getChildren().addAll(mapViewerElemets.getMapView(), imageViewerElements.getMainPane());
+        mapPane.setCenter(mapViewStack);
+        mapPane.setBottom(createStatusBar());
+        mapPane.setLeft(leftPanel);
     }
 
+    @NotNull
     public Node getMapPane() {
         return mapPane;
     }
-
-
 
     @NotNull
     private String generateGeneralReport(@NotNull MarkerData markerData) {
