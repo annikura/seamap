@@ -94,7 +94,7 @@ public class MapViewerElemets {
             Double bestDistance = null;
 
             for (ShipData ship : displayedData.ships) {
-                if (shipVisibilityControls.get(ship.shipName).isSelected() || shipVisibilityControls.get(ship.shipName).isIndeterminate()) {
+                if (((CheckBoxTreeItem) shipVisibilityControls.get(ship.shipName).getChildren().get(1)).isSelected()) {
                     double newDistance = ship.distanceToShip(newCoordinate);
                     if (newDistance < CoordinateData.EPS * Math.pow(2.0, 18 - mapView.getZoom())
                             && (bestDistance == null || newDistance < bestDistance)) {
@@ -349,7 +349,7 @@ public class MapViewerElemets {
 
         private void setLabelsState(final @NotNull BooleanProperty markersVisibility,
                                     final @NotNull BooleanProperty pathVisibility) {
-            setCheckBoxPropertyState(labels, markersVisibility, pathVisibility, showSquaresCheckBox);
+            setCheckBoxPropertyState(labels, markersVisibility, pathVisibility, showLabelsCheckBox);
         }
 
         private void setWindDirectionsState(final @NotNull BooleanProperty markersVisibility,
