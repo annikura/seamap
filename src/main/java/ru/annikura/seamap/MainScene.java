@@ -30,7 +30,7 @@ public class MainScene {
 
         journalTap.setContent(journalPane.getTablePane());
         weatherTap.setContent(weatherPane.getTablePane());
-        mapPane = new MapPane(stage, journalStorage, weatherStorage);
+        mapPane = new MapPane(stage, journalStorage, weatherStorage, null);
 
         mainPane.getTabs().addAll(mapTab, journalTap, weatherTap);
         mapTab.setContent(mapPane.getMapPane());

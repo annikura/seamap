@@ -2,17 +2,16 @@ package ru.annikura.seamap.panes;
 
 import com.sothawo.mapjfx.*;
 import com.sothawo.mapjfx.event.MapViewEvent;
-import com.sothawo.mapjfx.offline.OfflineCache;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.value.ChangeListener;
 import javafx.scene.Node;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.CheckBoxTreeCell;
-import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import ru.annikura.seamap.data.CoordinateData;
 import ru.annikura.seamap.data.MapData;
 import ru.annikura.seamap.data.MarkerData;
@@ -20,7 +19,6 @@ import ru.annikura.seamap.data.ShipData;
 import ru.annikura.seamap.utils.Holder;
 import ru.annikura.seamap.utils.Utils;
 
-import java.awt.event.ActionEvent;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -35,7 +33,6 @@ public class MapViewerElemets {
     private MapData displayedData = new MapData();
 
     private VBox mapSettingsPaneBox = new VBox();
-    private ToggleGroup visibilityToggle = new ToggleGroup();
     private RadioButton showAll = new RadioButton("Show everything");
     private RadioButton showOnlyMarkers = new RadioButton("Show markers only");
     private RadioButton showOnlyPaths = new RadioButton("Show paths only");
@@ -44,23 +41,15 @@ public class MapViewerElemets {
     private CheckBox showLabelsCheckBox = new CheckBox("Show relevant time marks");
     private CheckBox showWindDirectionsCheckBox = new CheckBox("Show relevant wind directions");
 
-
     private Holder<MapLabel> tipLabelHolder = new Holder<>();
-
 
     private TreeView<String> visibilityControlsTree = new TreeView<>();
     private Map<String, CheckBoxTreeItem<String>> shipVisibilityControls = new HashMap<>();
 
-    public MapViewerElemets() {
-        mapView.setCustomMapviewCssURL(getClass().getResource("/custom_mapview.css"));
-        mapView.addEventFilter(MouseEvent.MOUSE_CLICKED, event -> {
-            if (event.getButton().equals(MouseButton.SECONDARY)) {
-                event.consume();
-            }
-        });
+    public MapViewerElemets(final @Nullable String cacheDirectory) {
+        // Setup mapView
 
-        final OfflineCache offlineCache = mapView.getOfflineCache();
-        final String cacheDir = "seamap-cache";
+        mapView.setCustomMapviewCssURL(getClass().getResource("/custom_mapview.css"));
 
         mapView.initializedProperty().addListener((observableValue, aBoolean, t1) -> {
             mapView.setCenter(new Coordinate(0.0, 0.0));
@@ -73,17 +62,20 @@ public class MapViewerElemets {
                 }
             });
 
-            try {
-                Files.createDirectories(Paths.get(cacheDir));
-                offlineCache.setCacheDirectory(cacheDir);
-                offlineCache.setActive(true);
-            } catch (IOException e) {
-                System.out.println(e.getMessage());
-            } catch (NullPointerException ignored) {}
+            if (cacheDirectory != null) {
+                try {
+                    Files.createDirectories(Paths.get(cacheDirectory));
+                    mapView.getOfflineCache().setCacheDirectory(cacheDirectory);
+                    mapView.getOfflineCache().setActive(true);
+                } catch (IOException e) {
+                    // TODO: show alert
+                    System.out.println(e.getMessage());
+                } catch (NullPointerException ignored) {
+                }
+            }
         });
 
         mapView.initialize();
-
 
         mapView.addEventHandler(MapViewEvent.MAP_POINTER_MOVED, mapViewEvent -> {
             if (tipLabelHolder.getValue() != null) {
@@ -96,12 +88,14 @@ public class MapViewerElemets {
             for (ShipData ship : displayedData.ships) {
                 if (shipVisibilityControls.get(ship.shipName).isSelected() || shipVisibilityControls.get(ship.shipName).isIndeterminate()) {
                     double newDistance = ship.distanceToShip(newCoordinate);
-                    if (newDistance < CoordinateData.EPS * Math.pow(2.0, 18 - mapView.getZoom()) && (bestDistance == null || newDistance < bestDistance)) {
+                    if (newDistance < CoordinateData.EPS * Math.pow(2.0, 18 - mapView.getZoom())
+                            && (bestDistance == null || newDistance < bestDistance)) {
                         nearestShip = ship;
                         bestDistance = newDistance;
                     }
                 }
             }
+
             if (nearestShip == null) {
                 return;
             }
@@ -109,6 +103,8 @@ public class MapViewerElemets {
             if (coordinateApproximation == null) {
                 return;
             }
+
+            // Todo: create data parsing
             MapLabel newMapLabel = new MapLabel(coordinateApproximation.date.substring(11), 12, 12).setCssClass("map-label");
             tipLabelHolder.setValue(newMapLabel);
             newMapLabel.setPosition(Utils.coordinateDataToCoordinate(newCoordinate));
@@ -117,11 +113,13 @@ public class MapViewerElemets {
         });
 
         mapView.addEventHandler(MapViewEvent.MAP_EXTENT, event -> {
-            event.consume();
             mapView.setExtent(event.getExtent());
         });
 
 
+        // Setup left panel controls
+
+        ToggleGroup visibilityToggle = new ToggleGroup();
         showAll.setToggleGroup(visibilityToggle);
         showOnlyMarkers.setToggleGroup(visibilityToggle);
         showOnlyPaths.setToggleGroup(visibilityToggle);
@@ -145,6 +143,7 @@ public class MapViewerElemets {
         });
 
         CheckBoxTreeItem<String> visibilityControlsRootItem = new CheckBoxTreeItem<>("Content visibility");
+
         visibilityControlsRootItem.setExpanded(true);
         visibilityControlsTree.setRoot(visibilityControlsRootItem);
         visibilityControlsTree.setShowRoot(true);
@@ -159,8 +158,6 @@ public class MapViewerElemets {
                 showSquaresCheckBox,
                 showLabelsCheckBox,
                 showWindDirectionsCheckBox);
-
-
     }
 
     public MarkerData getMarkerData(final @NotNull String id) {
@@ -187,9 +184,9 @@ public class MapViewerElemets {
     }
 
 
-    public void loadMapData(@NotNull MapData mapData) {
+    public void loadMapData(final @NotNull MapData mapData) {
         mapView.setCenter(new Coordinate(mapData.mapCenterLat, mapData.mapCenterLng));
-
+        displayedData = mapData;
         for (ShipData ship : mapData.ships) {
             final ShipMapElements shipElements = new ShipMapElements(ship.markers, ship.color);
             final CheckBoxTreeItem<String> shipCheckBoxItem = new CheckBoxTreeItem<>(ship.shipName + " (" + ship.color + ")");
@@ -210,9 +207,6 @@ public class MapViewerElemets {
             shipMapElements.add(shipElements);
         }
     }
-
-
-
 
     private class ShipMapElements {
         private final ArrayList<Marker> markers = new ArrayList<>();

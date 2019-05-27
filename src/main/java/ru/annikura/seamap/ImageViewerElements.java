@@ -7,7 +7,9 @@ import javafx.event.Event;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.SnapshotParameters;
-import javafx.scene.control.*;
+import javafx.scene.control.Button;
+import javafx.scene.control.ScrollPane;
+import javafx.scene.control.TitledPane;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.image.WritableImage;
@@ -110,7 +112,7 @@ public class ImageViewerElements {
                 closableImangeControlsBox.setAlignment(Pos.TOP_LEFT);
 
                 closeHelpButton.setOnAction(me -> {
-                    imageConrolsPane.getChildren().remove(closableImangeControlsBox);
+                    imageControlsList.getChildren().remove(closableImangeControlsBox);
                     images.remove(newImage);
                     anchorPane.getChildren().remove(newImage.getImageView());
                 });

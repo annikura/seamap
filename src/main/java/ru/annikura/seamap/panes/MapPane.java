@@ -19,6 +19,7 @@ import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.stage.Stage;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import ru.annikura.seamap.ImageViewerElements;
 import ru.annikura.seamap.data.MapData;
 import ru.annikura.seamap.data.MarkerData;
@@ -30,7 +31,7 @@ import ru.annikura.seamap.journal.WeatherRecord;
 
 public class MapPane {
     private BorderPane mapPane = new BorderPane();
-    private MapViewerElemets mapViewerElemets = new MapViewerElemets();
+    private MapViewerElemets mapViewerElemets;
 
     private Label currentCoordinatesValueLabel  = new Label();
     private TextArea generalInfoContent;
@@ -129,7 +130,10 @@ public class MapPane {
 
     public MapPane(final @NotNull Stage stage,
                    final @NotNull ChangebleStorage<JournalRecord> journalRecordChangebleStorage,
-                   final @NotNull ChangebleStorage<WeatherRecord> weatherRecordChangebleStorage) {
+                   final @NotNull ChangebleStorage<WeatherRecord> weatherRecordChangebleStorage,
+                   final @Nullable String cacheDirectory) {
+        mapViewerElemets = new MapViewerElemets(cacheDirectory);
+
         // Create map area control panel.
 
         CheckBox showImagesCheckBox = new CheckBox("Show images layer");
@@ -157,7 +161,6 @@ public class MapPane {
         imageViewerElements.visibilityProperty().bind(
                 showImagesCheckBox.selectedProperty()
                         .or(imageViewerElements.getControlsPane().expandedProperty()));
-
         // Setting up left pane.
 
         Accordion leftPanel = new Accordion();
