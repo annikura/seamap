@@ -19,7 +19,7 @@ import javafx.stage.Stage;
 import javafx.stage.Window;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import ru.annikura.seamap.panes.DynamicImageView;
+import ru.annikura.seamap.panes.DynamicImageElements;
 
 import javax.imageio.ImageIO;
 import java.io.File;
@@ -40,7 +40,7 @@ public class ImageModeScene {
     private VBox imageConrolsPane = new VBox();
     private TitledPane imageControls = new TitledPane("Image controls", imageConrolsPane);
 
-    private ArrayList<DynamicImageView> images = new ArrayList<>();
+    private ArrayList<DynamicImageElements> images = new ArrayList<>();
 
     private BooleanProperty imagesVisibility = new SimpleBooleanProperty(true);
 
@@ -89,7 +89,7 @@ public class ImageModeScene {
         uploadNewImageButton.setOnMouseClicked(mouseEvent -> {
             File picture = openPicture(scrollPane.getScene().getWindow());
             if (picture != null) {
-                DynamicImageView newImage = new DynamicImageView(picture);
+                DynamicImageElements newImage = new DynamicImageElements(picture);
 
                 newImage.getImageView().visibleProperty().bind(
                         newImage.getVisibilityProperty()

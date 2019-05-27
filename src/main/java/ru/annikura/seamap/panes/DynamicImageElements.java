@@ -14,7 +14,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
 
-public class DynamicImageView {
+public class DynamicImageElements {
     private final DraggableImageView image;
     private final Node controlsPanel;
 
@@ -122,7 +122,7 @@ public class DynamicImageView {
         return controlsBox;
     }
 
-    public DynamicImageView(final @NotNull File imageFile) {
+    public DynamicImageElements(final @NotNull File imageFile) {
         image = new DraggableImageView(new Image(imageFile.toURI().toString()));
         image.setOnScroll(scrollEvent -> {
             double sizeCoefficient = 0.001;
