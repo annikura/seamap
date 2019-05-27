@@ -48,6 +48,7 @@ public class RecordsProcesser {
                 JournalRecord markerRecord = journalRecords.get(id);
                 MarkerData markerData = new MarkerData();
                 markerData.date = markerRecord.date;
+                markerData.parent = markerRecord;
 
                 if (weatherMap.containsKey(markerRecord.date)) {
                     markerData.weatherData = weatherMap.get(markerRecord.date);

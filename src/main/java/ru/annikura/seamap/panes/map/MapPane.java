@@ -22,6 +22,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import ru.annikura.seamap.data.MapData;
 import ru.annikura.seamap.data.MarkerData;
+import ru.annikura.seamap.data.ShipData;
 import ru.annikura.seamap.data.WeatherData;
 import ru.annikura.seamap.journal.ChangebleStorage;
 import ru.annikura.seamap.journal.JournalRecord;
@@ -31,9 +32,11 @@ import ru.annikura.seamap.journal.WeatherRecord;
 public class MapPane {
     private BorderPane mapPane = new BorderPane();
     private MapViewerElemets mapViewerElemets;
+    private MapData displayedData = new MapData();
 
     private Label currentCoordinatesValueLabel  = new Label();
     private TextArea generalInfoContent;
+    Button deleteMarkerButton = new Button("Delete marker");
 
     @NotNull
     private Node createStatusBar() {
@@ -119,7 +122,7 @@ public class MapPane {
         generalInfoContent.setStyle(
                 "-fx-background-color: transparent ;" +
                         "-fx-background-insets: 0px ;");
-        VBox innerHelpBox = new VBox(generalInfoHeading, generalInfoContent);
+        VBox innerHelpBox = new VBox(generalInfoHeading, generalInfoContent, deleteMarkerButton);
         innerHelpBox.setStyle("-fx-padding: 15px;");
         VBox result = new VBox(closeHelpButton, innerHelpBox);
         result.setMaxWidth(400);
@@ -148,7 +151,7 @@ public class MapPane {
             mapPane.setRight(null);
 
             mapViewerElemets.clearOldData();
-            MapData displayedData = RecordsProcesser.processRecords(
+            displayedData = RecordsProcesser.processRecords(
                     journalRecordChangebleStorage.getItems(),
                     weatherRecordChangebleStorage.getItems());
             mapViewerElemets.loadMapData(displayedData);
@@ -184,6 +187,15 @@ public class MapPane {
             // TODO: validate that marker has such data
             MarkerData markerData = mapViewerElemets.getMarkerData(event.getMarker().getId());
             generalInfoContent.setText(generateGeneralReport(markerData));
+            deleteMarkerButton.setOnAction(e -> {
+                ShipData ship = displayedData.getShip(markerData.ship);
+                mapViewerElemets.clearShipData(markerData.ship);
+                displayedData.remove(markerData);
+                journalRecordChangebleStorage.remove(markerData.parent);
+                if (displayedData.getShip(markerData.ship) != null) {
+                    mapViewerElemets.loadShipData(ship);
+                }
+            });
             mapPane.setRight(infoBox);
         });
 

@@ -13,6 +13,21 @@ public class ShipData {
     public String shipName;
     public List<MarkerData> markers;
 
+    public boolean add(final @Nullable MarkerData markerData) {
+        // Todo false if no data or ship not matching
+        for (int i = 0; i < markers.size(); i++) {
+            if (markers.get(i).getDate().compareTo(markerData.getDate()) > 0) {
+                markers.add(i, markerData);
+            }
+        }
+        markers.add(markerData);
+        return true;
+    }
+
+    public boolean remove(final @Nullable MarkerData markerData) {
+        return markers.remove(markerData);
+    }
+
     public @Nullable MarkerData projectCoordinateOnPath(final @NotNull CoordinateData coordinate) {
         int closestSegment = findClosestSegment(coordinate);
         if (closestSegment + 1 >= markers.size() ||

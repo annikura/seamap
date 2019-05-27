@@ -28,7 +28,7 @@ import java.util.stream.Collectors;
 public class MapViewerElemets {
     private MapView mapView = new MapView();
 
-    private ArrayList<MapViewerElemets.ShipMapElements> shipMapElements = new ArrayList<>();
+    private HashMap<String, ShipMapElements> shipMapElements = new HashMap<>();
     private HashMap<String, MarkerData> markerMapping = new HashMap<>();
     private MapData displayedData = new MapData();
 
@@ -138,15 +138,15 @@ public class MapViewerElemets {
             if (newToggle.equals(customMode)) {
                 return;
             }
-            shipMapElements.forEach(shipElements -> {
+            shipMapElements.values().forEach(shipElements -> {
                 shipElements.setMarkersState(false);
                 shipElements.setPathState(false);
             });
             if (newToggle.equals(showAll) || newToggle.equals(showOnlyMarkers)) {
-                shipMapElements.forEach(shipElements -> shipElements.setMarkersState(true));
+                shipMapElements.values().forEach(shipElements -> shipElements.setMarkersState(true));
             }
             if (newToggle.equals(showAll) || newToggle.equals(showOnlyPaths)) {
-                shipMapElements.forEach(shipElements -> shipElements.setPathState(true));
+                shipMapElements.values().forEach(shipElements -> shipElements.setPathState(true));
             }
         });
 
@@ -183,7 +183,7 @@ public class MapViewerElemets {
     public void clearOldData() {
         visibilityControlsTree.getRoot().getChildren().clear();
         shipVisibilityControls.clear();
-        for (MapViewerElemets.ShipMapElements shipMapElement : shipMapElements) {
+        for (MapViewerElemets.ShipMapElements shipMapElement : shipMapElements.values()) {
             shipMapElement.deleteShipElements(mapView);
         }
         shipMapElements.clear();
@@ -191,28 +191,38 @@ public class MapViewerElemets {
         showAll.setSelected(true);
     }
 
+    public void clearShipData(final @NotNull String name) {
+        visibilityControlsTree.getRoot().getChildren().remove(shipVisibilityControls.get(name));
+        shipMapElements.get(name).deleteShipElements(mapView);
+        shipVisibilityControls.remove(name);
+        shipMapElements.remove(name);
+    }
+
+    public void loadShipData(final @NotNull ShipData ship) {
+        final ShipMapElements shipElements = new ShipMapElements(ship.markers, ship.color);
+        final CheckBoxTreeItem<String> shipCheckBoxItem = new CheckBoxTreeItem<>(ship.shipName + " (" + ship.color + ")");
+        shipVisibilityControls.put(ship.shipName, shipCheckBoxItem);
+        final CheckBoxTreeItem<String> dataPointsCheckBoxItem = new CheckBoxTreeItem<>("Data points visible");
+        final CheckBoxTreeItem<String> shipRoutesCheckBoxItem = new CheckBoxTreeItem<>("Path visible");
+        shipCheckBoxItem.getChildren().add(dataPointsCheckBoxItem);
+        shipCheckBoxItem.getChildren().add(shipRoutesCheckBoxItem);
+
+        dataPointsCheckBoxItem.setSelected(!showOnlyPaths.isSelected());
+        shipRoutesCheckBoxItem.setSelected(!showOnlyMarkers.isSelected());
+        shipElements.setMarkersState(!showOnlyPaths.isSelected());
+        shipElements.setPathState(!showOnlyMarkers.isSelected());
+        shipElements.setup(dataPointsCheckBoxItem.selectedProperty(), shipRoutesCheckBoxItem.selectedProperty());
+
+        visibilityControlsTree.getRoot().getChildren().add(shipCheckBoxItem);
+        shipElements.showShipElements(mapView);
+        shipMapElements.put(ship.shipName, shipElements);
+    }
 
     public void loadMapData(final @NotNull MapData mapData) {
         mapView.setCenter(new Coordinate(mapData.mapCenterLat, mapData.mapCenterLng));
         displayedData = mapData;
         for (ShipData ship : mapData.ships) {
-            final ShipMapElements shipElements = new ShipMapElements(ship.markers, ship.color);
-            final CheckBoxTreeItem<String> shipCheckBoxItem = new CheckBoxTreeItem<>(ship.shipName + " (" + ship.color + ")");
-            shipVisibilityControls.put(ship.shipName, shipCheckBoxItem);
-            final CheckBoxTreeItem<String> dataPointsCheckBoxItem = new CheckBoxTreeItem<>("Data points visible");
-            final CheckBoxTreeItem<String> shipRoutesCheckBoxItem = new CheckBoxTreeItem<>("Path visible");
-            shipCheckBoxItem.getChildren().add(dataPointsCheckBoxItem);
-            shipCheckBoxItem.getChildren().add(shipRoutesCheckBoxItem);
-
-            dataPointsCheckBoxItem.setSelected(!showOnlyPaths.isSelected());
-            shipRoutesCheckBoxItem.setSelected(!showOnlyMarkers.isSelected());
-            shipElements.setMarkersState(!showOnlyPaths.isSelected());
-            shipElements.setPathState(!showOnlyMarkers.isSelected());
-            shipElements.setup(dataPointsCheckBoxItem.selectedProperty(), shipRoutesCheckBoxItem.selectedProperty());
-
-            visibilityControlsTree.getRoot().getChildren().add(shipCheckBoxItem);
-            shipElements.showShipElements(mapView);
-            shipMapElements.add(shipElements);
+            loadShipData(ship);
         }
     }
 
