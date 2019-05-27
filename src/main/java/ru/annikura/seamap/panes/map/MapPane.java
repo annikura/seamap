@@ -163,6 +163,12 @@ public class MapPane {
         imageViewerElements.visibilityProperty().bind(
                 showImagesCheckBox.selectedProperty()
                         .or(imageViewerElements.getControlsPane().expandedProperty()));
+        imageViewerElements.getControlsPane().expandedProperty().addListener(((observable, oldValue, newValue) -> {
+            if (newValue) {
+                mapPane.setRight(null);
+            }
+        }));
+
         // Setting up left pane.
 
         Accordion leftPanel = new Accordion();
